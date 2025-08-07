@@ -1,5 +1,4 @@
-# BIC-MOBO
-[:construction: Under construction! :construction:]
+# BIC-MOBO [Under construction!]
 
 An application of MOBO techniques to the ePIC Barrel Imaging Calorimeter (BIC). As the
 BIC design is largely finalized and optimal, this is intended as a simple test of the
