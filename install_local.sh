@@ -45,7 +45,7 @@ conda install python=3.11.5
 # install relevant packages
 pip install -r pip_requirements.txt
 pip install gmpy2
-conda install --file conda_requirements.txt
+conda install --file conda_requirements.txt # FIXME this probably isn't needed
 
 # additional installations will go here
 
