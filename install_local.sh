@@ -19,6 +19,14 @@ if [ "$#" -ne 1 ]; then
   return 2
 fi
 
+# now activate conda
+#   - this assumes conda (or mamba) is already installed,
+#     e.g. via miniforge
+#
+#       https://github.com/conda-forge/miniforge
+#
+conda activate
+
 # check if environment is already created
 if { conda env list | grep "$1"; } >/dev/null 2>&1; then
   echo "WARNING: environment already created!"
@@ -28,13 +36,8 @@ if { conda env list | grep "$1"; } >/dev/null 2>&1; then
 fi
 
 # if not created, create environment
-#   - this assumes conda (or mamba) is already installed,
-#     e.g. via miniforge
-#
-#       https://github.com/conda-forge/miniforge
-#
-conda_dir=$CONDA_PREFIX
-conda env create --prefix=$conda_dir <name>
+conda create --name $1
+conda activate $1
 
 # framework requires python 3.11.5
 conda install python=3.11.5
