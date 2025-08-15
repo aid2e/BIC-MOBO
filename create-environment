@@ -1,0 +1,18 @@
+# ===============================================
+# @file    create-environment
+# @authors Derek Anderson, building on work by
+#          Karthik Suresh,
+#          Connor Pecar,
+#          Wen Guan
+# @date    08.14.2025
+# -----------------------------------------------
+# Creates conda/mamba environment for running
+# BIC MOBO exercise.
+# 
+# Usage:
+#   ./create-environment
+# ===============================================
+
+conda env create -f bic-mobo.yml
+
+# end ===========================================
