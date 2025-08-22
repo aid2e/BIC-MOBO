@@ -1,6 +1,5 @@
 #include "edm4hep/MCParticleCollection.h"
 #include "edm4eic/CherenkovParticleIDCollection.h"
-//#include "podio/ROOTFrameReader.h"
 #include "podio/ROOTReader.h"
 #include "podio/Frame.h"
 #include "TH1F.h"
@@ -29,7 +28,6 @@ void extractSPEres(const char* filename, const char* outname, const char* outdir
   TH1F* hSingleTheta = new TH1F("hSingleTheta", "", nbins, thlow, thhigh);
   TH1F* hnPhotons = new TH1F("hnPhotons", "", 60, -0.5, 60.5);  
   
-  //podio::ROOTFrameReader reader;
   podio::ROOTReader reader;
   reader.openFile(filename);
   

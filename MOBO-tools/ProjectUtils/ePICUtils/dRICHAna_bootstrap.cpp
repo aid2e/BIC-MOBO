@@ -2,7 +2,6 @@
 #include <vector>
 #include <numeric>
 #include <cmath>
-//#include "podio/ROOTFrameReader.h"
 #include "podio/ROOTReader.h"
 #include "podio/Frame.h"
 #include "edm4eic/CherenkovParticleIDCollection.h"
@@ -26,7 +25,6 @@ struct EventData {
 // loop over all events in the file, storing needed dRICH information
 std::vector<EventData> readEventData(const char* infile, int radiator) {
   std::vector<EventData> events;
-  //podio::ROOTFrameReader reader;
   podio::ROOTReader reader;
   reader.openFile(infile);
   int nev = reader.getEntries("events");
