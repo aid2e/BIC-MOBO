@@ -1,0 +1,15 @@
+#!/bin/bash
+# ===============================================
+# @file   eic-shell
+# @author Derek Anderson
+# @date   08.22.2025
+# -----------------------------------------------
+# Activates required eic-shell using image
+# on CVMFS.
+#
+# FIXME remove when ready
+# ===============================================
+
+singularity exec /cvmfs/singularity.opensciencegrid.org/eic/eic_xl:24.11.1-stable eic-shell
+
+# end ===========================================
