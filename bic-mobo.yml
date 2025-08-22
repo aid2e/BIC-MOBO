@@ -9,7 +9,7 @@ dependencies:
     - ax-platform==0.3.6
     - torch
     - pandas
-    - numpy
+    - numpy==1.26.4
     - matplotlib
     - wandb
     - botorch 
