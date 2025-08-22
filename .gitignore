@@ -2,6 +2,6 @@ MOBO-tools/eic-software/
 MOBO-tools/epic-geom-drich-mobo/
 ProjectUtils/__pycache__/
 ProjectUtils/ePICUtils/__pycache__/
-ProjectUtils/ePICUtils/dRICHAna
-ProjectUtils/ePICUtils/dRICHAna_bootstrap
+dRICHAna
+dRICHAna_bootstrap
 ref/
