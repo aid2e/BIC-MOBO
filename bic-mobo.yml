@@ -1,13 +1,12 @@
 name: bic-mobo
 channels:
-  - defaults
   - conda-forge
 dependencies:
   - python=3.11.5
   - pip
   - pip:
     - ax-platform==0.3.6
-    - torch
+    - torch==2.1.0
     - pandas
     - numpy==1.26.4
     - matplotlib
