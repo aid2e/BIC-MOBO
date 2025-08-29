@@ -19,8 +19,8 @@ from podio.reading import get_reader
 
 
 def CalculateReso(
-    ifile = "../../input/forToyObjectiveTesting.epic25080evt1Ke5th33ele.podio.root",
-    ofile = "test.root",
+    ifile = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root",
+    ofile = "test_reso.root",
     pdg   = 11
 ):
     """CalculateReso
