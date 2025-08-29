@@ -10,25 +10,26 @@ As the BIC design is largely finalized and optimal, this exercise has three purp
 
 ## Development strategy
 
-Develoment will start with the toolkit as-is (no EIC components) and build
-this new problem from the ground-up, using the
+Develoment will build this new problem from the ground-up, using the
 [dRICH-MOBO](https://github.com/aid2e/dRICH-MOBO) as reference.
 
 ### Steps:
 
 - [x] Create simplified environment creation/deletion scripts
-- [ ] Run toy example on BIC simulation using only Ax, AID2E, and
-      dummy objectives
-- [ ] Integrate and run toy example with aid2e scheduler
-- [ ] Implement realistic objectives inspired by previous BIC studies
-- [ ] Run optimization at scale.
+- [ ] Run optimization locally on BIC simulation using scheduler
+      with one objective, energy resolution
+- [ ] Run workflow with one objective on hPC resources via
+      SLURM using scheduler
+- [ ] Implement second objective, electron-pion separation
+- [ ] Run workflow with both objectives on HPC resources via
+      PANDA using scheduler
 
 ### Design Goals:
 
 - Minimal startup for new users;
 - Integration with developing AID2E scheduler;
-- Ability to run small tests locally (without scheduler), and large
-  productions remotely (with scheduler);
+- Ability to run small tests locally  and large productions remotely 
+  (both can be handled by scheduler);
 - Clear separation of interface to toolkit and definition of problem;
 - And clear separation of EIC-specific analysis/software components and AID2E
   framework components.
