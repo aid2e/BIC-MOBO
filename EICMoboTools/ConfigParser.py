@@ -4,9 +4,8 @@
 #           with light modifications by Derek Anderson
 #  @date    09.02.2025
 # -----------------------------------------------------------------------------
-## @brief Parses configuration JSON files
-#    and returns appropriately structured
-#    dictionaries
+## @brief Module to parse configuration JSON files and
+#    return appropriately structured dictionaries.
 # =============================================================================
 
 import json
@@ -29,7 +28,25 @@ def ReadJsonFile(jsonFile):
         data = json.loads(f.read())
     return data
 
-# FIXME this might be needed...
+def GetParameter(parameter, configFile):
+    """GetParameter
+
+    Extracts specified parameter from  as a
+    dictionary  from parameter configuration
+    file. Raises exception if parameter is not
+    found.
+
+    Keyword arguments
+    parameter  -- the key of the parameter to extract
+    configFile -- the parameter configuration file to parse
+    """
+    config = ConfigParser.ReadJsonFile(configFile)["parameters"]
+    if config[parameter] :
+        return config[parameter]
+    else:
+        raise NameError('Parameter {parameter} not found in file {configFile}!')
+
+# FIXME this might not be needed...
 def GetDesignParamNames(dataDict, rangeDict):
     designParams = {}
     for key, value in dataDict.items():
