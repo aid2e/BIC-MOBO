@@ -1,0 +1,8 @@
+{
+    "_comment"   : "Configures environment paths to EIC software components", 
+    "epic_setup" : "/home/dereka/aid2e/dev/ForBICStage1/epic/install/bin/thisepic.sh",
+    "det_path"   : "DETECTOR_PATH",
+    "det_config" : "DETECTOR_CONFIG",
+    "sim_exec"   : "npsim",
+    "reco_exec"  : "eicrecon"
+}
