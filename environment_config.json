@@ -4,5 +4,9 @@
     "det_path"   : "DETECTOR_PATH",
     "det_config" : "DETECTOR_CONFIG",
     "sim_exec"   : "npsim",
-    "reco_exec"  : "eicrecon"
+    "sim_input"  : {
+        "location" : "/home/dereka/aid2e/BIC-MOBO/steering",
+        "type"     : "single"
+    },
+    "reco_exec" : "eicrecon"
 }
