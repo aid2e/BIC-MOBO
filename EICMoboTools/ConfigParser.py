@@ -36,15 +36,26 @@ def GetParameter(parameter, configFile):
     file. Raises exception if parameter is not
     found.
 
-    Keyword arguments
+    Keyword arguments:
     parameter  -- the key of the parameter to extract
     configFile -- the parameter configuration file to parse
     """
-    config = ConfigParser.ReadJsonFile(configFile)["parameters"]
+    config = ReadJsonFile(configFile)["parameters"]
     if config[parameter] :
         return config[parameter]
     else:
         raise NameError('Parameter {parameter} not found in file {configFile}!')
+
+def GetPathElementAndUnits(parameter):
+    """GetPathElementAndUnits
+
+    Helper method to extract the path, element,
+    and units from a parameter.
+
+    Keyword arguments:
+    parameter -- the parameter to extract from
+    """
+    return parameter["path"], parameter["element"], parameter["units"]
 
 # FIXME this might not be needed...
 def GetDesignParamNames(dataDict, rangeDict):
