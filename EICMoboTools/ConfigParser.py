@@ -1,7 +1,8 @@
 # =============================================================================
 ## @file    ConfigParser.py
 #  @authors Karthik Suresh,
-#           with light modifications by Derek Anderson
+#           Connor Pecar,
+#           with modifications by Derek Anderson
 #  @date    09.02.2025
 # -----------------------------------------------------------------------------
 ## @brief Module to parse configuration JSON files and
@@ -28,7 +29,7 @@ def ReadJsonFile(jsonFile):
         data = json.loads(f.read())
     return data
 
-def GetParameter(parameter, configFile):
+def GetParameter(param, file):
     """GetParameter
 
     Extracts specified parameter from  as a
@@ -36,26 +37,30 @@ def GetParameter(parameter, configFile):
     file. Raises exception if parameter is not
     found.
 
-    Keyword arguments:
-    parameter  -- the key of the parameter to extract
-    configFile -- the parameter configuration file to parse
+    Args:
+      param: key of the parameter to extract
+      file: parameter configuration file to parse
+    Returns:
+      dictionary associated with parameter
     """
-    config = ReadJsonFile(configFile)["parameters"]
-    if config[parameter] :
-        return config[parameter]
+    config = ReadJsonFile(file)["parameters"]
+    if config[param] :
+        return config[param]
     else:
-        raise NameError('Parameter {parameter} not found in file {configFile}!')
+        raise NameError('Parameter {param} not found in file {file}!')
 
-def GetPathElementAndUnits(parameter):
+def GetPathElementAndUnits(param):
     """GetPathElementAndUnits
 
     Helper method to extract the path, element,
     and units from a parameter.
 
-    Keyword arguments:
-    parameter -- the parameter to extract from
+    Args:
+      param: the parameter to extract from
+    Returns:
+      tuple of the path, element, and units of parameter
     """
-    return parameter["path"], parameter["element"], parameter["units"]
+    return param["path"], param["element"], param["units"]
 
 # FIXME this might not be needed...
 def GetDesignParamNames(dataDict, rangeDict):
