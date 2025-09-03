@@ -10,8 +10,9 @@ As the BIC design is largely finalized and optimal, this exercise has three purp
 
 ## Development strategy
 
-Develoment will build this new problem from the ground-up, using the
-[dRICH-MOBO](https://github.com/aid2e/dRICH-MOBO) as reference.
+Develoment will proceeding by building this new problem from the ground-up, using
+the [dRICH-MOBO](https://github.com/aid2e/dRICH-MOBO) as reference and leveraging
+the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 
 ### Steps:
 
@@ -26,13 +27,16 @@ Develoment will build this new problem from the ground-up, using the
 
 ### Design Goals:
 
-- Minimal startup for new users;
-- Integration with developing AID2E scheduler;
-- Ability to run small tests locally  and large productions remotely 
-  (both can be handled by scheduler);
-- Clear separation of interface to toolkit and definition of problem;
-- And clear separation of EIC-specific analysis/software components and AID2E
-  framework components.
+- Integration with [AID2E scheduler](https://github.com/aid2e/scheduler_epic);
+- Both small-scale, local tests and larger-scale, remote tests are able to
+  be run easily
+- Modified EIC software interface is:
+    1. Able to handle arbitrary numbers of subsytems to modify,
+    2. Able to be easily factorized and deployed in other problems,
+    3. Able to handle modifying reconstruction parameters (stretch
+       goal);
+    4. And can be evolved to align with ongoing work in the [holistic
+       optimization](https://github.com/aid2e/HolisticOptimization) example;
 
 ## Dependencies
 
@@ -41,6 +45,24 @@ Develoment will build this new problem from the ground-up, using the
 - [Ax](https://ax.dev)
 - [EIC Software](https://eic.github.io)
 - [AID2E Scheduler](https://github.com/aid2e/scheduler_epic)
+
+## Code organization
+
+This repository is structured like so:
+
+  - `environment_config.json` -- defines paths to EIC software, components,
+    executables to be used, etc.
+  - `problem_config.json` -- defines metadata and parameters for optimization
+    algorithms
+  - `parameters_config.json` -- defines design parameters to optimize with
+  - `objectives` -- collects analysis scripts to calculate objectives
+    for optimize for
+  - `steering` -- collects steering files for running single particle
+    simulations
+  - `EICMoboTools` -- a python module which consolidates various tools for
+    interfacing with the EIC software stack
+
+TODO: will be expanded/modified as development proceeds
 
 ## Installation
 
@@ -63,4 +85,38 @@ At any point, this environment can be deleted with
 
 ## Running the framework
 
-TODO: fill in here
+Before beginning, create a local installation of [the ePIC geometry
+description](https://github.com/eic/epic) and compile it:
+```
+cd <where-the-geo-goes>
+git clone git@github.com:eic/epic.git
+cd epic
+cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install
+cmake --build build
+cmake --install build
+```
+
+Then, modify `environment_config.json` so that the paths point to your
+installations and relevent scripts, eg.
+```
+{
+    "_comment"   : "Configures environment paths to EIC software components",
+    "eic_shell"  : "<path-to-your-script>/eic-shell",
+    "epic_setup" : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
+    "det_path"   : "<where-the-geo-goes>/epic/install/share/epic",
+    "det_config" : "epic",
+    "sim_exec"   : "npsim",
+    "sim_input"  : {
+        "location" : "<where-the-mobo-goes>/BIC-MOBO/steering",
+        "type"     : "single"
+    },
+    "reco_exec" : "eicrecon"
+}
+```
+
+Where the angle brackets should be replaced with the appropriate
+absolute paths. The values `det_path` and `det_config` should be
+what `echo $DETECTOR_PATH` and `echo $DETECTOR_CONFIG` return after
+sourcing your installation of the geometry.
+
+TODO: fill in remainder when `main` is ready.
