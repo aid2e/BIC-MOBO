@@ -62,16 +62,4 @@ def GetPathElementAndUnits(param):
     """
     return param["path"], param["element"], param["units"]
 
-# FIXME this might not be needed...
-def GetDesignParamNames(dataDict, rangeDict):
-    designParams = {}
-    for key, value in dataDict.items():
-        for i in range(1, value[0] + 1):
-            key1 = key.replace("_fill_", f"{i}")
-            if(rangeDict.get(key1)):
-                designParams[key1] = rangeDict[key1]
-            else:
-                designParams[key1] = rangeDict[key]
-    return designParams
-
 # end =========================================================================

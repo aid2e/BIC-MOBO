@@ -8,8 +8,6 @@
 #    files for a trial.
 # =============================================================================
 
-import json
-import math # FIXME maybe not needed?
 import os
 import shutil
 import sys
