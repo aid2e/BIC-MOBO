@@ -13,7 +13,6 @@ import math # FIXME maybe not needed?
 import os
 import shutil
 import sys
-
 import xml.etree.ElementTree as ET
 
 from EICMoboTools import ConfigParser
@@ -29,30 +28,46 @@ class GeometryEditor:
     def __init__(self, enviro, params):
         """constructor accepting arguments
 
-        Keyword arguments:
-        enviro -- environment configuration file
-        params -- parameter configuration file
+        Args:
+          enviro: environment configuration file
+          params: parameter configuration file
         """
         self.cfgEnviro = ConfigParser.ReadJsonFile(enviro)
         self.cfgParams = ConfigParser.ReadJsonFile(params)
 
+    def __GetNewXMLName(self, name, tag):
+        """GetNewXMLName
+
+        Helper method to add tag to provided
+        filename of xml.
+
+        Args:
+          name: name of the xml file to tag
+          tag:  the tag to append
+        Returns:
+          filename with tag appended
+        """
+        newSuffix = "_aid2e_" + tag + ".xml"
+        newName   = name.replace(".xml", newSuffix)
+        return newName
+
     def __GetCompact(self, param, tag):
         """GetCompact
 
-        Checks if the compact file associated
-        with a parameter and a particular tag
-        exists and returns the path to it. If
-        it doesn't exist, it creates it.
+        Checks if the compact file associated with a parameter
+        and a particular tag exists and returns the path to it.
+        If it doesn't exist, it creates it.
 
-        Keyword arguments:
-        param -- a parameter, structured according to parameter config file
-        tag   -- the tag associated with the relevant trial
+        Args:
+          param: a parameter, structured according to parameter config file
+          tag:   the tag associated with the current trial
+        Returns:
+          path to compact file associated with parameter and tag
         """
 
         # extract path and create relevant name
         oldCompact = self.cfgEnviro["det_path"] + "/" + param["compact"]
-        newSuffix  = "_" + tag + ".xml"
-        newCompact = oldCompact.replace(".xml", newSuffix)
+        newCompact = self.__GetNewXMLName(oldCompact, tag)
 
         # if new compact does not exist, create it
         if not os.path.exists(newCompact):
@@ -68,15 +83,15 @@ class GeometryEditor:
         a particular tag exists and returns the path
         to it. If it doesn't exist, it creates it.
 
-        Keyword arguments:
-        param -- a parameter, structured according to parameter config file
-        tag   -- the tag associated with the relevant trial
+        Args:
+          tag: the tag associated with the current trial
+        Returns:
+          path to the config file associated with tag
         """
 
         # extract path and create relevant name
         oldConfig = self.cfgEnviro["det_path"] + "/" + self.cfgEnviro["det_config"] + ".xml"
-        newSuffix = "_" + tag + ".xml"
-        newConfig = oldConfig.replace(".xml", newSuffix)
+        newConfig = self.__GetNewXMLName(oldConfig, tag) 
 
         # if new config does not exist, create it
         if not os.path.exists(newConfig):
@@ -88,20 +103,19 @@ class GeometryEditor:
     def EditCompact(self, param, value, tag):
         """EditCompact
 
-        Creates and edits a compact file to update
-        the specified parameter and tag.
+        Updates the value of a parameter in the compact
+        file associated with it and the provided tag.
 
-        Keyword arguments:
-        param -- a parameter, structured according to parameter config file
-        value -- the new value of the parameter
-        tag   -- the tag associated with the relevant trial
+        Args:
+          param: the parameter and its associated compact file
+          value: the value to update to
+          tag:   the tag associated with the current trial
         """
 
         # get path to compact file to edit, and
         # parse the xml
         fileToEdit = self.__GetCompact(param, tag)
         treeToEdit = ET.parse(fileToEdit)
-        #treeRoot = treeToEdit.getroot()
  
         # extract relevant info from parameter
         path, elem, unit = ConfigParser.GetPathElementAndUnits(param)
@@ -112,6 +126,40 @@ class GeometryEditor:
             elemToEdit.set(elem, "{}*{}".format(value, unit))
         else:
             elemToEdit.set(elem, "{}".format(value))
+
+        # save edits and exit
+        treeToEdit.write(fileToEdit)
+        return
+
+    def EditConfig(self, param, tag):
+        """EditConfig
+
+        Updates the compact file associated with
+        a provided parameter in the config file
+        associated with the provided tag.
+
+        Args:
+          param: the parameter and its associated compact file
+          tag:   the tag associated with the current trial
+        """
+
+        # get path to config file to edit, and
+        # parse the xml
+        fileToEdit = self.__GetConfig(tag)
+        treeToEdit = ET.parse(fileToEdit)
+
+        # grab old & new compact files
+        # associated with parameter
+        oldCompact = param["compact"]
+        newCompact = self.__GetNewXMLName(oldCompact, tag)
+
+        # find old compact and replace
+        # with new one
+        path="${DETECTOR_PATH}/"
+        for element in treeToEdit.getroot().findall('.//include'):
+            if element.get('ref') == str(path + oldCompact):
+                element.set('ref', str(path + newCompact))
+                break
 
         # save edits and exit
         treeToEdit.write(fileToEdit)
