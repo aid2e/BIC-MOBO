@@ -19,8 +19,10 @@ def ReadJsonFile(jsonFile):
     Checks if specified json file exists, and loads
     it if it does.
 
-    Keyword arguments:
-    jsonFile -- file to read
+    Args:
+      jsonFile: file to read
+    Returns:
+      dictionary of loaded data
     """
     if(os.path.isfile(jsonFile) == False):
         print ("ERROR: the json file you specified does not exist")
