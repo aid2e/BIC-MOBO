@@ -46,9 +46,9 @@ print(f"[1][test A] set values of staves 1, 2 to 0, 1 respectively")
 # now create config files associated with
 # compact; the 2nd line should leave
 # config file unmodified
-geditor.EditConfig(enable1, "test1A")
-geditor.EditConfig(enable2, "test1A")
-print("[1][Test A] config file created")
+configA = geditor.EditConfig(enable1, "test1A")
+configA = geditor.EditConfig(enable2, "test1A")
+print(f"[1][Test A] config file {configA} created")
 
 # create a 2nd compact file with multiple
 # subsystems modified
@@ -61,8 +61,31 @@ print(f"[1][test B] set value of stave 5 to 1, and the dRICH snout length to 23 
 # this one should create a new config file,
 # and the 2nd line should add the modified
 # dRICH file
-geditor.EditConfig(enable5, "test1B")
-geditor.EditConfig(dsnout, "test1B")
-print(f"[1][test B] config file created")
+configB = geditor.EditConfig(enable5, "test1B")
+configB = geditor.EditConfig(dsnout, "test1B")
+print(f"[1][test B] config file {configB} created")
+
+# (2) Test SimGenerator -------------------------------------------------------
+
+# create a sim generator and parse enviroment
+# config for easy use
+simgen = emt.SimGenerator("environment_config.json")
+enviro = emt.ReadJsonFile("environment_config.json")
+intest = "single_electron"
+inputs = enviro["sim_input"][intest]
+
+# try to create a command
+dosim = simgen.MakeCommand("test2", intest, inputs["location"], "central.e5ele.py", inputs["type"])
+print(f"[2][Test A] Created command to do simulation:")
+print(f"{dosim}")
+
+# grab just the config name from
+# our previous test
+conPathA, conFileA = emt.SplitPathAndFile(configA)
+conFileA = conFileA.replace(".xml", "")
+
+# now try to create a driver script
+runsim = simgen.MakeScript("test2", intest, "central.e5ele.py", conFileA, dosim)
+print(f"[2][Test B] created driver script {runsim} for simulation")
 
 # end =========================================================================

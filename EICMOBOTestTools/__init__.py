@@ -9,11 +9,17 @@ software stack
 __version__="0.0.0"
 
 from .GeometryEditor import GeometryEditor
+from .SimGenerator import SimGenerator
+
 from .ConfigParser import *
+from .FileManager import *
 
 __all__ = [
+    "ConvertSteeringToTag",
     "GeometryEditor",
     "ReadJsonFile",
     "GetParameter",
-    "GetDesignParamNames"
+    "GetPathElementAndUnits",
+    "SimGenerator",
+    "SplitPathAndFile"
 ]
