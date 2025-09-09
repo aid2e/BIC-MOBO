@@ -59,7 +59,7 @@ This repository is structured like so:
     for optimize for
   - `steering` -- collects steering files for running single particle
     simulations
-  - `EICMoboTools` -- a python module which consolidates various tools for
+  - `EICMOBOTestTools` -- a python module which consolidates various tools for
     interfacing with the EIC software stack
 
 TODO: will be expanded/modified as development proceeds
@@ -82,6 +82,9 @@ At any point, this environment can be deleted with
 ```
 ./remove-environment
 ```
+
+Then, install the [AID2E scheduler](https://github.com/aid2e/scheduler_epic)
+following the instructions in its repository.
 
 ## Running the framework
 

@@ -1,6 +1,9 @@
 """
-EIC MOBO Tools -- A library for AID2E to simplify interfacing with
-                  the EIC software stack
+EIC MOBO Tools (Test ver.)
+
+A testbed library for AID2E tools to
+simplify interfacing with the EIC
+software stack
 """
 
 __version__="0.0.0"

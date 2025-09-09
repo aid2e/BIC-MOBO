@@ -4,12 +4,13 @@
 #  @date   09.02.2025
 # -----------------------------------------------------------------------------
 ## @brief A small script to test various features
-#    of the EICMoboTools module.
+#    of the EICMOBOTestTools module.
 #
 #  TODO convert to use pytest
 # =============================================================================
 
-import EICMoboTools as emt
+import EICMOBOTestTools as emt
+
 
 
 # (0) Test ConfigParser -------------------------------------------------------

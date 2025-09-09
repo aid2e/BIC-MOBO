@@ -1,9 +1,3 @@
-MOBO-tools/eic-software/
-MOBO-tools/epic-geom-drich-mobo/
-ProjectUtils/__pycache__/
-ProjectUtils/ePICUtils/__pycache__/
-dRICHAna
-dRICHAna_bootstrap
 objectives/__pycache__
-EICMoboTools/__pycache__
+EICMOBOTestTools/__pycache__
 ref/

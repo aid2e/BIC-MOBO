@@ -1,11 +1,12 @@
 {
-    "_comment"   : "Configures environment paths to EIC software components", 
-    "epic_setup" : "/home/dereka/aid2e/dev/ForBICStage1/epic/install/bin/thisepic.sh",
-    "det_path"   : "DETECTOR_PATH",
-    "det_config" : "DETECTOR_CONFIG",
+    "_comment"   : "Configures environment paths to EIC software components",
+    "eic_shell"  : "<path-to-your-script>/eic-shell",
+    "epic_setup" : "<path-to-your-geo-installation>/epic/install/bin/thisepic.sh",
+    "det_path"   : "<path-to-your-geo-installation>/epic/install/share/epic",
+    "det_config" : "epic",
     "sim_exec"   : "npsim",
     "sim_input"  : {
-        "location" : "/home/dereka/aid2e/BIC-MOBO/steering",
+        "location" : "<path-to-this-repo>/BIC-MOBO/steering",
         "type"     : "single"
     },
     "reco_exec" : "eicrecon"

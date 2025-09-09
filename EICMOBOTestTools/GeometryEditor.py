@@ -13,7 +13,7 @@ import shutil
 import sys
 import xml.etree.ElementTree as ET
 
-from EICMoboTools import ConfigParser
+from EICMOBOTestTools import ConfigParser
 
 class GeometryEditor:
     """GeometryEditor
