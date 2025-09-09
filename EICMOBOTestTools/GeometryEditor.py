@@ -139,6 +139,8 @@ class GeometryEditor:
         Args:
           param: the parameter and its associated compact file
           tag:   the tag associated with the current trial
+        Returns:
+          new config name
         """
 
         # get path to config file to edit, and
@@ -161,6 +163,6 @@ class GeometryEditor:
 
         # save edits and exit
         treeToEdit.write(fileToEdit)
-        return
+        return fileToEdit
 
 # end =========================================================================
