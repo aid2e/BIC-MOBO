@@ -1,16 +1,11 @@
 # =============================================================================
 ## @file    SimGenerator.py
-#  @authors Derek Anderson, building off work by
-#           Connor Pecar
+#  @authors Derek Anderson
 #  @date    09.09.2025
 # -----------------------------------------------------------------------------
 ## @brief Class to generate commands and scripts to run
 #    Geant4 simulation via npsim or ddsim for a trial.
 # =============================================================================
-
-import os
-import shutil
-import sys
 
 from EICMOBOTestTools import ConfigParser
 from EICMOBOTestTools import FileManager
@@ -28,7 +23,6 @@ class SimGenerator:
 
         Args:
           enviro: environment configuration file
-          params: parameter configuration file
         """
         self.cfgEnviro = ConfigParser.ReadJsonFile(enviro)
 
@@ -50,7 +44,7 @@ class SimGenerator:
 
         # construct output name
         steeTag = FileManager.ConvertSteeringToTag(steer)
-        outFile = FileManager.MakeSimOutName(tag, label, steeTag)
+        outFile = FileManager.MakeOutName(tag, label, steeTag, "sim")
 
         # create arguments for command
         #   --> n.b. this assumes the DETECTOR_CONFIG variable
@@ -61,7 +55,7 @@ class SimGenerator:
 
         # construct most of command
         command = self.cfgEnviro["sim_exec"] + compact + steerer
-        if inType is "gun":
+        if inType == "gun":
             command = command + " -G "
 
         # return command with output file attached
@@ -87,15 +81,17 @@ class SimGenerator:
 
         # construct script name
         steeTag   = FileManager.ConvertSteeringToTag(steer)
-        simScript = FileManager.MakeSimScriptName(tag, label, steeTag)
+        simScript = FileManager.MakeScriptName(tag, label, steeTag, "sim")
         simPath   = self.cfgEnviro["run_path"] + "/" + simScript
 
         # make commands to set detector config
-        setConfig = "DETECTOR_CONFIG=" + config
+        setInstall = "source " + self.cfgEnviro["epic_setup"]
+        setConfig  = "DETECTOR_CONFIG=" + config
 
         # open script name
         with open(simPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
+            script.write(setInstall + "\n")
             script.write(setConfig + "\n\n")
             script.write(command)
 
