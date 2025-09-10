@@ -39,20 +39,33 @@ def ConvertSteeringToTag(steer):
     tag = tag.replace("_py", "")
     return tag 
 
-def MakeSimOutName(tag, label, steer):
-    """MakeSimOutName
+def MakeOutName(tag, label, steer, stage, analysis = ""):
+    """MakeOutName
 
-    Creates file name for Geant4
-    simulation output.
+    Creates output file name for
+    any stage of a trial.
 
     Args:
-      tag:   the tag associated with the current trial
-      label: the label associated with the input
-      steer: the tag associated with the input steering file
+      tag:      the tag associated with the current trial
+      label:    the label associated with the input
+      steer:    the tag associated with the input steering file
+      stage:    the tag associated with the relevant stage of the trail
+      analysis: the tag associated with the analysis being run
     """
-    return "aid2e_sim." + tag + "_" + label + "_" + steer + ".edm4hep.root"
 
-def MakeSimScriptName(tag, label, steer):
+    # make sure extension is correct
+    suffix = ""
+    if stage == "sim":
+        suffix = ".edm4hep"
+    elif stage == "rec":
+        suffix = ".edm4eic"
+    elif stage == "ana":
+        suffix = "_" + analysis
+
+    # return output file name
+    return "aid2e_" + stage + "." + tag + "_" + label + "_" + steer + suffix + ".root"
+
+def MakeScriptName(tag, label, steer, stage):
     """MakeSimScriptName
 
     Creates file name for Geant4
@@ -62,20 +75,8 @@ def MakeSimScriptName(tag, label, steer):
       tag:   the tag associated with the current trial
       label: the label associated with the input
       steer: the tag associated with the input steering file
+      stage: the tag associated with the relevant stage of the trail
     """
-    return "do_aid2e_sim." + tag + "_" + label + "_" + steer + ".sh"
-
-def MakeRecOutName(tag, label, steer):
-    """MakeSimOutName
-
-    Creates file name for eicrecon
-    output.
-
-    Args:
-      tag:   the tag associated with the current trial
-      label: the label associated with the input
-      steer: the tag associated with the input steering file
-    """
-    return "aid2e_rec." + tag + "_" + label + "_" + steer + ".edm4eic.root"
+    return "do_aid2e_" + stage + "." + tag + "_" + label + "_" + steer + ".sh"
 
 # end =========================================================================
