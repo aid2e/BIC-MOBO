@@ -9,6 +9,7 @@ software stack
 __version__="0.0.0"
 
 from .GeometryEditor import GeometryEditor
+from .RecGenerator import RecGenerator
 from .SimGenerator import SimGenerator
 
 from .ConfigParser import *
@@ -20,6 +21,9 @@ __all__ = [
     "ReadJsonFile",
     "GetParameter",
     "GetPathElementAndUnits",
+    "MakeOutName",
+    "MakeScriptName",
+    "RecGenerator"
     "SimGenerator",
     "SplitPathAndFile"
 ]

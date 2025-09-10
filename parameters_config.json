@@ -71,8 +71,26 @@
             "upper"      : "1",
             "compact"    : "compact/ecal/bic_default.xml",
             "stage"      : "sim"
+        },
+        "cap_adc" : {
+            "_comment" : "This is to test modifying eicrecon parameters",
+            "path"     : "BEMC:EcalBarrelScFiRawHits:capADC",
+            "default"  : "16384",
+            "units"    : "",
+            "lower"    : "4096",
+            "upper"    : "65536",
+            "stage"    : "rec"
+        },
+        "dynamic_range" : {
+            "_comment" : "This is to test modifying eicrecon parameters",
+            "path"     : "BEMC:EcalBarrelScFiRawHits:dyRangeANDC",
+            "default"  : "1500",
+            "units"    : "dd4hep::MeV",
+            "lower"    : "1000",
+            "upper"    : "2000",
+            "stage"    : "rec"
         }
     },
-    "constraints":{
+    "constraints" : {
     }
 }

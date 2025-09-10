@@ -65,7 +65,7 @@ configB = geditor.EditConfig(enable5, "test1B")
 configB = geditor.EditConfig(dsnout, "test1B")
 print(f"[1][test B] config file {configB} created")
 
-# (2) Test SimGenerator -------------------------------------------------------
+# (2) Test generators  --------------------------------------------------------
 
 # create a sim generator and parse enviroment
 # config for easy use
@@ -74,18 +74,36 @@ enviro = emt.ReadJsonFile("environment_config.json")
 intest = "single_electron"
 inputs = enviro["sim_input"][intest]
 
-# try to create a command
+# try to create a simulation command
 dosim = simgen.MakeCommand("test2", intest, inputs["location"], "central.e5ele.py", inputs["type"])
 print(f"[2][Test A] Created command to do simulation:")
-print(f"{dosim}")
+print(f"  {dosim}")
 
 # grab just the config name from
 # our previous test
 conPathA, conFileA = emt.SplitPathAndFile(configA)
 conFileA = conFileA.replace(".xml", "")
 
-# now try to create a driver script
+# now try to create a simulation driver script
 runsim = simgen.MakeScript("test2", intest, "central.e5ele.py", conFileA, dosim)
 print(f"[2][Test B] created driver script {runsim} for simulation")
+
+# create a rec generator and parse parameter
+# config for easy use
+recgen = emt.RecGenerator("environment_config.json")
+params = emt.ReadJsonFile("parameters_config.json")
+
+# collect reconstruction parameters for command
+recgen.AddParamToArgs(params["parameters"]["cap_adc"], 8192)
+recgen.AddParamToArgs(params["parameters"]["dynamic_range"], 1300) 
+
+# try to create a reco command
+dorec = recgen.MakeCommand("test2", inputs["location"], "central.e5ele.py")
+print(f"[2][Test C] Created command to do reconstruction:")
+print(f"  {dorec}")
+
+# and now try to create a simulation reconstruction script
+runrec = recgen.MakeScript("test2", intest, "central.e5ele.py", conFileA, dorec)
+print(f"[2][Test D] Created driver script {runrec} for reconstruction")
 
 # end =========================================================================
