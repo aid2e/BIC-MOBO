@@ -14,5 +14,5 @@
             "type"     : "gun"
         }
     },
-    "reco_exec" : "eicrecon"
+    "rec_exec" : "eicrecon"
 }
