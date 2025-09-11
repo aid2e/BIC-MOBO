@@ -12,16 +12,6 @@
             "compact" : "compact/pid/drich.xml",
             "stage"   : "sim"
         },
-        "enable_staves_1" : {
-            "element"    : "value",
-            "path"       : ".//constant[@name='EcalBarrel_enable_staves_1']",
-            "default"    : "1",
-            "units"      : "",
-            "lower"      : "0",
-            "upper"      : "1",
-            "compact"    : "compact/ecal/bic_default.xml",
-            "stage"      : "sim"
-        },
         "enable_staves_2" : {
             "element"    : "value",
             "path"       : ".//constant[@name='EcalBarrel_enable_staves_2']",
