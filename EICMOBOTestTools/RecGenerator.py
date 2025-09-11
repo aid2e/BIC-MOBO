@@ -7,6 +7,9 @@
 #    eicrecon for a trial.
 # =============================================================================
 
+import os
+import stat
+
 from EICMOBOTestTools import ConfigParser
 from EICMOBOTestTools import FileManager
 
@@ -114,12 +117,15 @@ class RecGenerator:
         setInstall = "source " + self.cfgEnviro["epic_setup"]
         setConfig  = "DETECTOR_CONFIG=" + config
 
-        # open script name
+        # compose script
         with open(recPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
             script.write(setInstall + "\n")
             script.write(setConfig + "\n\n")
             script.write(command)
+
+        # make sure script can be run
+        os.chmod(recPath, 0o777)
 
         # return path to script
         return recPath

@@ -7,6 +7,9 @@
 #    Geant4 simulation via npsim or ddsim for a trial.
 # =============================================================================
 
+import os
+import stat
+
 from EICMOBOTestTools import ConfigParser
 from EICMOBOTestTools import FileManager
 
@@ -88,12 +91,15 @@ class SimGenerator:
         setInstall = "source " + self.cfgEnviro["epic_setup"]
         setConfig  = "DETECTOR_CONFIG=" + config
 
-        # open script name
+        # compose script
         with open(simPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
             script.write(setInstall + "\n")
             script.write(setConfig + "\n\n")
             script.write(command)
+
+        # make sure script can be run
+        os.chmod(simPath, 0o777)
 
         # return path to script
         return simPath
