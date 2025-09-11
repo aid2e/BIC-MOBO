@@ -50,17 +50,13 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 
 This repository is structured like so:
 
-  - `environment_config.json` -- defines paths to EIC software, components,
-    executables to be used, etc.
-  - `problem_config.json` -- defines metadata and parameters for optimization
-    algorithms
-  - `parameters_config.json` -- defines design parameters to optimize with
-  - `objectives` -- collects analysis scripts to calculate objectives
-    for optimize for
-  - `steering` -- collects steering files for running single particle
-    simulations
-  - `EICMOBOTestTools` -- a python module which consolidates various tools for
-    interfacing with the EIC software stack
+
+  | `run_config.json` | defines paths to EIC software, components, executables to be used, etc. |
+  | `problem_config.json` | defines metadata and parameters for optimization algorithms |
+  | `parameters_config.json` | defines design parameters to optimize with |
+  | `objectives` | collects analysis scripts to calculate objectives for optimize for |
+  | `steering` | collects steering files for running single particle simulations |
+  | `EICMOBOTestTools` | a python module which consolidates various tools for interfacing with the EIC software stack |
 
 TODO: will be expanded/modified as development proceeds
 
@@ -99,11 +95,14 @@ cmake --build build
 cmake --install build
 ```
 
-Then, modify `environment_config.json` so that the paths point to your
+Then, modify `run_config.json` so that the paths point to your
 installations and relevent scripts, eg.
 ```
 {
-    "_comment"   : "Configures environment paths to EIC software components",
+    "_comment"   : "Configures runtime options, and paths to EIC software components",
+    "out_path"   : "<where-the-output-goes>/out",
+    "run_path"   : "<where-the-running-goes>/run",
+    "log_path"   : "<where-the-logs-go>/log",
     "eic_shell"  : "<path-to-your-script>/eic-shell",
     "epic_setup" : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
     "det_path"   : "<where-the-geo-goes>/epic/install/share/epic",
@@ -113,7 +112,22 @@ installations and relevent scripts, eg.
         "location" : "<where-the-mobo-goes>/BIC-MOBO/steering",
         "type"     : "single"
     },
-    "reco_exec" : "eicrecon"
+    "reco_exec"   : "eicrecon"
+    "rec_collect" : [
+        "MCParticles",
+        "GeneratedParticles",
+        "EcalBarrelScFiRawHits",
+        "EcalBarrelScFiRawHitAssociations",
+        "EcalBarrelScFiRecHits",
+        "EcalBarrelScFiClusters",
+        "EcalBarrelScFiClusterAssociations",
+        "EcalBarrelImagingRawHits",
+        "EcalBarrelImagingRawHitAssociations",
+        "EcalBarrelImagingRecHits",
+        "EcalBarrelImagingClusters",
+        "EcalBarrelImagingClusterAssociations",
+        "EcalBarrelClusters"
+    ]
 }
 ```
 

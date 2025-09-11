@@ -62,8 +62,22 @@ class RecGenerator:
         inFile  = FileManager.MakeOutName(tag, label, steeTag, "sim")
         outFile = FileManager.MakeOutName(tag, label, steeTag, "rec")
 
+        # construct list of collections to make
+        icollect = 0
+        collects = ""
+        for collect in self.cfgEnviro["rec_collect"]:
+            if icollect + 1 < len(self.cfgEnviro["rec_collect"]):
+                collects = collects + collect + ","
+            else:
+                collects = collects + collect
+            icollect = icollect + 1
+
+        # construct output arguments
+        outArg  = "-Ppodio:output_file=" + self.cfgEnviro["out_path"] + "/" + outFile
+        collArg = "-Ppodio:output_collections=" + collects
+
         # construct most of command
-        command = self.cfgEnviro["rec_exec"] + " -Ppodio:output_file=" + outFile
+        command = self.cfgEnviro["rec_exec"] + " " + outArg + " " + collArg
         for param, unitsAndValue in self.argParams.items():
             units, value = unitsAndValue
             if units != '': 
@@ -72,7 +86,7 @@ class RecGenerator:
                 command = command + " -P" + param + "=\"{}\"".format(value)
 
         # return command with input file attached
-        command = command + " " + inFile
+        command = command + " " + self.cfgEnviro["out_path"] + "/" + inFile
         return command
 
     def MakeScript(self, tag, label, steer, config, command):
