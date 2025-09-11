@@ -34,9 +34,8 @@ def ConvertSteeringToTag(steer):
     Args:
       steer: steering file name
     """
-    tag = steer
+    tag = os.path.splitext(os.path.basename(steer))[0]
     tag = tag.replace(".", "_")
-    tag = tag.replace("_py", "")
     return tag 
 
 def MakeOutName(tag, label, steer, stage, analysis = ""):
