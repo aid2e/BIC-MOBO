@@ -74,7 +74,7 @@
         },
         "cap_adc" : {
             "_comment" : "This is to test modifying eicrecon parameters",
-            "path"     : "BEMC:EcalBarrelScFiRawHits:capADC",
+            "path"     : "BEMC:EcalBarrelScFiRawHits:capacityADC",
             "default"  : "16384",
             "units"    : "",
             "lower"    : "4096",
@@ -83,7 +83,7 @@
         },
         "dynamic_range" : {
             "_comment" : "This is to test modifying eicrecon parameters",
-            "path"     : "BEMC:EcalBarrelScFiRawHits:dyRangeANDC",
+            "path"     : "BEMC:EcalBarrelScFiRawHits:dynamicRangeADC",
             "default"  : "1500",
             "units"    : "dd4hep::MeV",
             "lower"    : "1000",
