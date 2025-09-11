@@ -23,15 +23,13 @@ class GeometryEditor:
     for a trial.
     """
 
-    def __init__(self, enviro, params):
+    def __init__(self, run):
         """constructor accepting arguments
 
         Args:
-          enviro: environment configuration file
-          params: parameter configuration file
+          run: runtime configuration file
         """
-        self.cfgEnviro = ConfigParser.ReadJsonFile(enviro)
-        self.cfgParams = ConfigParser.ReadJsonFile(params)
+        self.cfgRun = ConfigParser.ReadJsonFile(run)
 
     def __GetNewXMLName(self, name, tag):
         """GetNewXMLName
@@ -64,7 +62,7 @@ class GeometryEditor:
         """
 
         # extract path and create relevant name
-        oldCompact = self.cfgEnviro["det_path"] + "/" + param["compact"]
+        oldCompact = self.cfgRun["det_path"] + "/" + param["compact"]
         newCompact = self.__GetNewXMLName(oldCompact, tag)
 
         # if new compact does not exist, create it
@@ -88,7 +86,7 @@ class GeometryEditor:
         """
 
         # extract path and create relevant name
-        oldConfig = self.cfgEnviro["det_path"] + "/" + self.cfgEnviro["det_config"] + ".xml"
+        oldConfig = self.cfgRun["det_path"] + "/" + self.cfgRun["det_config"] + ".xml"
         newConfig = self.__GetNewXMLName(oldConfig, tag) 
 
         # if new config does not exist, create it
