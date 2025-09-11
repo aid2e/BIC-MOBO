@@ -1,22 +1,22 @@
+#!/usr/bin/env python3
 # =============================================================================
 ## @file   BICEnergyResolution.py
 #  @author Derek Anderson
 #  @date   08.28.2025
 # -----------------------------------------------------------------------------
-# Script to compute energy resolution for a
-# specified particle species
+## @brief Script to compute energy resolution for a
+#    specified particle species
+#
+#  Usage if executed directly:
+#    ./BICEnergyResolution.py -i <input file> -o <output file> -p <pdg code>
 # =============================================================================
 
-import awkward as ak
+import argparse as ap
 import numpy as np
-import pandas as pd
 import ROOT
-import uproot as ur
+import sys
 
 from podio.reading import get_reader
-
-
-
 
 def CalculateReso(
     ifile = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root",
@@ -28,11 +28,12 @@ def CalculateReso(
     A function to calculate energy resolution for a 
     specified species of particle.
 
-    Keyword arguments:
-    ifile -- input file name
-    ofile -- output file name
-    pdg   -- PDG code of particle species
-
+    Args:
+      ifile: input file name
+      ofile: output file name
+      pdg:   PDG code of particle species
+    Returns:
+      calculated resolution
     """
 
     # set up histograms, etc. -------------------------------------------------
@@ -90,5 +91,21 @@ def CalculateReso(
 
     # and return calculated resolution
     return fres.GetParameter(2)
+
+# main ========================================================================
+
+if __name__ == "__main__":
+
+    # set up argments
+    parser = ap.ArgumentParser()
+    parser.add_argument("-i", "--input", help = "Input file")
+    parser.add_argument("-o", "--output", help = "Output file")
+    parser.add_argument("-p", "--pdg", help = "PDG code to look for", type = int)
+
+    # grab arguments
+    args = parser.parse_args()
+
+    # run analysis
+    CalculateReso(args.input, args.output, args.pdg)
 
 # end =========================================================================
