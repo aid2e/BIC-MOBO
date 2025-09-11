@@ -33,6 +33,8 @@ def ConvertSteeringToTag(steer):
 
     Args:
       steer: steering file name
+    Returns:
+      created tag
     """
     tag = os.path.splitext(os.path.basename(steer))[0]
     tag = tag.replace(".", "_")
@@ -50,6 +52,8 @@ def MakeOutName(tag, label, steer, stage, analysis = ""):
       steer:    the tag associated with the input steering file
       stage:    the tag associated with the relevant stage of the trail
       analysis: the tag associated with the analysis being run
+    Returns:
+      output file name
     """
 
     # make sure extension is correct
@@ -75,7 +79,21 @@ def MakeScriptName(tag, label, steer, stage):
       label: the label associated with the input
       steer: the tag associated with the input steering file
       stage: the tag associated with the relevant stage of the trail
+    Returns:
+      script name
     """
     return "do_aid2e_" + stage + "." + tag + "_" + label + "_" + steer + ".sh"
+
+def MakeDir(path):
+    """MakeDir
+
+    Creates a directory if it
+    doesn't exist.
+
+    Args:
+      path: the path to the new directory
+    """
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 # end =========================================================================

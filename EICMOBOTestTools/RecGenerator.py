@@ -20,13 +20,13 @@ class RecGenerator:
     to run eicrecon for a trial.
     """
 
-    def __init__(self, enviro):
+    def __init__(self, run):
         """constructor accepting arguments
 
         Args:
-          enviro: environment configuration file
+          run: runtime configuration file
         """
-        self.cfgEnviro = ConfigParser.ReadJsonFile(enviro)
+        self.cfgRun = ConfigParser.ReadJsonFile(run)
         self.argParams = dict()
 
     def ClearArgs(self):
@@ -65,22 +65,27 @@ class RecGenerator:
         inFile  = FileManager.MakeOutName(tag, label, steeTag, "sim")
         outFile = FileManager.MakeOutName(tag, label, steeTag, "rec")
 
+        # make sure output directory
+        # exist for trial
+        outDir = self.cfgRun["out_path"] + "/" + tag
+        FileManager.MakeDir(outDir)
+
         # construct list of collections to make
         icollect = 0
         collects = ""
-        for collect in self.cfgEnviro["rec_collect"]:
-            if icollect + 1 < len(self.cfgEnviro["rec_collect"]):
+        for collect in self.cfgRun["rec_collect"]:
+            if icollect + 1 < len(self.cfgRun["rec_collect"]):
                 collects = collects + collect + ","
             else:
                 collects = collects + collect
             icollect = icollect + 1
 
         # construct output arguments
-        outArg  = "-Ppodio:output_file=" + self.cfgEnviro["out_path"] + "/" + outFile
+        outArg  = "-Ppodio:output_file=" + outDir + "/" + outFile
         collArg = "-Ppodio:output_collections=" + collects
 
         # construct most of command
-        command = self.cfgEnviro["rec_exec"] + " " + outArg + " " + collArg
+        command = self.cfgRun["rec_exec"] + " " + outArg + " " + collArg
         for param, unitsAndValue in self.argParams.items():
             units, value = unitsAndValue
             if units != '': 
@@ -89,7 +94,7 @@ class RecGenerator:
                 command = command + " -P" + param + "=\"{}\"".format(value)
 
         # return command with input file attached
-        command = command + " " + self.cfgEnviro["out_path"] + "/" + inFile
+        command = command + " " + outDir + "/" + inFile
         return command
 
     def MakeScript(self, tag, label, steer, config, command):
@@ -108,13 +113,18 @@ class RecGenerator:
           path to the script created
         """
 
+        # make sure run directory
+        # exist for trial
+        runDir = self.cfgRun["run_path"] + "/" + tag
+        FileManager.MakeDir(runDir)
+
         # construct script name
         steeTag   = FileManager.ConvertSteeringToTag(steer)
         recScript = FileManager.MakeScriptName(tag, label, steeTag, "rec")
-        recPath   = self.cfgEnviro["run_path"] + "/" + recScript
+        recPath   = runDir + "/" + recScript
 
         # make commands to set detector config
-        setInstall = "source " + self.cfgEnviro["epic_setup"]
+        setInstall = "source " + self.cfgRun["epic_setup"]
         setConfig  = "DETECTOR_CONFIG=" + config
 
         # compose script

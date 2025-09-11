@@ -21,13 +21,13 @@ class SimGenerator:
     ddsim for a trial.
     """
 
-    def __init__(self, enviro):
+    def __init__(self, run):
         """constructor accepting arguments
 
         Args:
-          enviro: environment configuration file
+          run: runtime configuration file
         """
-        self.cfgEnviro = ConfigParser.ReadJsonFile(enviro)
+        self.cfgRun = ConfigParser.ReadJsonFile(run)
 
     def MakeCommand(self, tag, label, path, steer, inType): 
         """MakeCommand
@@ -39,6 +39,7 @@ class SimGenerator:
         Args:
           tag:    the tag associated with the current trial
           label:  the label associated with the input
+          path:   the path to the input steering file
           steer:  the input steering file
           inType: the type of input (e.g. gun, hepmc, etc.)
         Returns:
@@ -49,15 +50,20 @@ class SimGenerator:
         steeTag = FileManager.ConvertSteeringToTag(steer)
         outFile = FileManager.MakeOutName(tag, label, steeTag, "sim")
 
+        # make sure output directory
+        # exist for trial
+        outDir = self.cfgRun["out_path"] + "/" + tag
+        FileManager.MakeDir(outDir)
+
         # create arguments for command
         #   --> n.b. this assumes the DETECTOR_CONFIG variable
         #       has already been set to the trial's config file
         compact = " --compactFile $DETECTOR_PATH/$DETECTOR_CONFIG.xml" 
         steerer = " --steeringFile " + path + "/" + steer
-        output  = " --outputFile " + self.cfgEnviro["out_path"] + "/" + outFile
+        output  = " --outputFile " + outDir + "/" + outFile
 
         # construct most of command
-        command = self.cfgEnviro["sim_exec"] + compact + steerer
+        command = self.cfgRun["sim_exec"] + compact + steerer
         if inType == "gun":
             command = command + " -G "
 
@@ -82,13 +88,18 @@ class SimGenerator:
           path to the script created
         """
 
+        # make sure run directory
+        # exist for trial
+        runDir = self.cfgRun["run_path"] + "/" + tag
+        FileManager.MakeDir(runDir)
+
         # construct script name
         steeTag   = FileManager.ConvertSteeringToTag(steer)
         simScript = FileManager.MakeScriptName(tag, label, steeTag, "sim")
-        simPath   = self.cfgEnviro["run_path"] + "/" + simScript
+        simPath   = runDir + "/" + simScript
 
         # make commands to set detector config
-        setInstall = "source " + self.cfgEnviro["epic_setup"]
+        setInstall = "source " + self.cfgRun["epic_setup"]
         setConfig  = "DETECTOR_CONFIG=" + config
 
         # compose script
