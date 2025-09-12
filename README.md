@@ -50,7 +50,8 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 
 This repository is structured like so:
 
-
+  | Code | Description |
+  |------|-------------|
   | `run_config.json` | defines paths to EIC software, components, executables to be used, etc. |
   | `problem_config.json` | defines metadata and parameters for optimization algorithms |
   | `parameters_config.json` | defines design parameters to optimize with |
