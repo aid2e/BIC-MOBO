@@ -1,0 +1,11 @@
+{
+    "_comment"   : "Configure objectives to optimize for",
+    "objectives" : {
+        "ElectronEnergyResolution" : {
+            "input" : "single_electron",
+            "path"  : "/home/dereka/aid2e/dev/ForBICStage1/BIC-MOBO/objectives",
+            "exec"  : "BICEnergyResolution.py",
+            "rule"  : "<EXEC> -i <INPUT> -o <OUTPUT> -p 22"
+        }
+    }
+}
