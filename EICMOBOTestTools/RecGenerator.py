@@ -16,7 +16,7 @@ from EICMOBOTestTools import FileManager
 class RecGenerator:
     """RecGenerator
 
-    A class to generated commands and scripts
+    A class to generate commands and scripts
     to run eicrecon for a trial.
     """
 
@@ -124,8 +124,10 @@ class RecGenerator:
         recPath   = runDir + "/" + recScript
 
         # make commands to set detector config
-        setInstall = "source " + self.cfgRun["epic_setup"]
-        setConfig  = "DETECTOR_CONFIG=" + config
+        setInstall, setConfig = FileManager.MakeSetCommands(
+            self.cfgRun["epic_setup"],
+            config
+        )
 
         # compose script
         with open(recPath, 'w') as script:

@@ -8,7 +8,6 @@
 # =============================================================================
 
 import os
-import stat
 
 from EICMOBOTestTools import ConfigParser
 from EICMOBOTestTools import FileManager
@@ -99,8 +98,10 @@ class SimGenerator:
         simPath   = runDir + "/" + simScript
 
         # make commands to set detector config
-        setInstall = "source " + self.cfgRun["epic_setup"]
-        setConfig  = "DETECTOR_CONFIG=" + config
+        setInstall, setConfig = FileManager.MakeSetCommands(
+            self.cfgRun["epic_setup"],
+            config
+        )
 
         # compose script
         with open(simPath, 'w') as script:

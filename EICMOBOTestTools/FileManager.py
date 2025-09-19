@@ -40,7 +40,27 @@ def ConvertSteeringToTag(steer):
     tag = tag.replace(".", "_")
     return tag 
 
-def MakeOutName(tag, label, steer, stage, analysis = ""):
+def GetSuffix(stage, analysis = ""):
+    """GetSuffix
+
+    Grab correct suffix for stage.
+
+    Args:
+      stage:    the tag associated with the relevant stage of the trial
+      analysis: the tag associated with the analysis being run
+    Returns:
+      suffix relevant to stage
+    """
+    suffix = ""
+    if stage == "sim":
+        suffix = ".edm4hep"
+    elif stage == "rec":
+        suffix = ".edm4eic"
+    elif stage == "ana":
+        suffix = "_" + analysis
+    return suffix
+
+def MakeOutName(tag, label, steer, stage, analysis = "", prefix = ""):
     """MakeOutName
 
     Creates output file name for
@@ -50,23 +70,17 @@ def MakeOutName(tag, label, steer, stage, analysis = ""):
       tag:      the tag associated with the current trial
       label:    the label associated with the input
       steer:    the tag associated with the input steering file
-      stage:    the tag associated with the relevant stage of the trail
-      analysis: the tag associated with the analysis being run
+      stage:    the tag associated with the relevant stage of the trial
+      analysis: optional tag associated with the analysis being run
+      prefix:   optional string to inject at start of file name
     Returns:
       output file name
     """
 
-    # make sure extension is correct
-    suffix = ""
-    if stage == "sim":
-        suffix = ".edm4hep"
-    elif stage == "rec":
-        suffix = ".edm4eic"
-    elif stage == "ana":
-        suffix = "_" + analysis
-
-    # return output file name
-    return "aid2e_" + stage + "." + tag + "_" + label + "_" + steer + suffix + ".root"
+    prefix = "aid2e_" if prefix == "" else "aid2e_" + prefix + "_"
+    suffix = GetSuffix(stage, analysis)
+    name   = prefix + stage + "." + tag + "_" + label + "_" + steer + suffix + ".root"
+    return name 
 
 def MakeScriptName(tag, label, steer, stage):
     """MakeSimScriptName
@@ -83,6 +97,22 @@ def MakeScriptName(tag, label, steer, stage):
       script name
     """
     return "do_aid2e_" + stage + "." + tag + "_" + label + "_" + steer + ".sh"
+
+def MakeSetCommands(setup, config):
+    """MakeSetCommands
+
+    Creates commands to set relevant
+    detector path and configuration"
+
+    Args:
+      setup:  path to geometry installation
+      config: name of new detector config
+    Returns:
+      tuple of commands to set new detector path and config
+    """
+    setInsall = "source " + setup
+    setConfig = "export DETECTOR_CONFIG=" + config
+    return setInsall, setConfig
 
 def MakeDir(path):
     """MakeDir
