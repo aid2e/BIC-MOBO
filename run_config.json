@@ -10,7 +10,11 @@
     "sim_exec"   : "npsim",
     "sim_input"  : {
         "single_electron" : {
-            "location" : "/home/dereka/aid2e/dev/ForBICStage1/BIC-MOBO/steering",
+            "location" : "/home/dereka/aid2e/dev/ForBICStage1/BIC-MOBO/steering/electron",
+            "type"     : "gun"
+        },
+        "single_pi0" : {
+            "location" : "/home/dereka/aid2e/dev/ForBICStage1/BIC-MOBO/steering/pi0",
             "type"     : "gun"
         }
     },
