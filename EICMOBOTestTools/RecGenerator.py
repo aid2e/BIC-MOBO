@@ -29,6 +29,7 @@ class RecGenerator:
         self.cfgRun = ConfigParser.ReadJsonFile(run)
         self.argParams = dict()
 
+    # FIXME this is not thread-safe!
     def ClearArgs(self):
         """ClearArgs
 
