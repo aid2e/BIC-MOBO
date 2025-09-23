@@ -110,4 +110,22 @@ print(f"[2][Test D] Created driver scripts for reconstruction:")
 print(f"  {runrecA}")
 print(f"  {runrecB}")
 
+# (3) Test trial manager ------------------------------------------------------
+
+# create a trial manager
+triman = emt.TrialManager("run_config.json", "parameters_config.json", "objectives_config.json")
+
+# create new parameters to test
+nupar3 = {
+    "enable_staves_2" : 1,
+    "enable_staves_3" : 0,
+    "enable_staves_5" : 1,
+    "enable_staves_6" : 1
+}
+
+# make run script
+dorun = triman.MakeTrialScript("test3", nupar3)
+print(f"[3] Created driver script for entire trial:")
+print(f"  {dorun}")
+
 # end =========================================================================

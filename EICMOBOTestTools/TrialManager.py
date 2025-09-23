@@ -31,9 +31,9 @@ class TrialManager:
           par: parameter configuration file
           ana: objectives configuration file
         """
-        self.cfgRun  = ConfigParser(run)
-        self.cfgPar  = ConfigParser(par)
-        self.cfgAna  = ConfigParser(ana)
+        self.cfgRun  = ConfigParser.ReadJsonFile(run)
+        self.cfgPar  = ConfigParser.ReadJsonFile(par)
+        self.cfgAna  = ConfigParser.ReadJsonFile(ana)
         self.geoEdit = GeometryEditor(run)
         self.simGen  = SimGenerator(run)
         self.recGen  = RecGenerator(run)
@@ -51,8 +51,8 @@ class TrialManager:
           name of new epic config file
         """
         trialConfig = ""
-        for par, value in params:
-            cfg = self.cfgPar[par]
+        for par, value in params.items():
+            cfg = self.cfgPar["parameters"][par]
             if cfg["stage"] != "sim":
                 continue
             else:
@@ -71,10 +71,10 @@ class TrialManager:
           params: dictionary of parameter names and current values (eg. from Ax)
         """
         self.recGen.ClearArgs()
-        for par, value in params:
+        for par, value in params.items():
 
             # ignore parameters from earlier stages
-            cfg = self.cfgPar[par]
+            cfg = self.cfgPar["parameters"][par]
             if cfg["stage"] != "rec":
                 continue
             else:
@@ -99,15 +99,20 @@ class TrialManager:
         self.__SetRecoArgs(params)
 
         # create commands to set detector path, config
+        # FIXME maybe DoGeometryEdits should just return the config
+        #   name w/o the .xml
+        cfgPath, cfgFile = FileManager.SplitPathAndFile(trialCfg)
         setInstall, setConfig = FileManager.MakeSetCommands(
             self.cfgRun["epic_setup"],
-            config
+            cfgFile.replace(".xml", "")
         )
         commands = [setInstall, setConfig]
 
+        # TODO add overlap check here
+
         # step 2: generate relevant simulation,
         # reconstruction commands
-        for inKey, inCfg in self.cfgRun["sim_input"]:
+        for inKey, inCfg in self.cfgRun["sim_input"].items():
 
             # if there are multiple steering files,
             # loop over each
@@ -138,6 +143,25 @@ class TrialManager:
             # TODO add merging command here
             # TODO add analysis command here
 
-        # TODO add script generation here
+        # make sure run directory
+        # exists for trial
+        runDir = self.cfgRun["run_path"] + "/" + tag
+        FileManager.MakeDir(runDir)
+
+        # construct script name
+        runScript = FileManager.MakeScriptName(tag)
+        runPath   = runDir + "/" + runScript
+
+        # compose script
+        with open(runPath, 'w') as script:
+            script.write("#!/bin/bash\n\n")
+            for command in commands:
+                script.write(command + "\n")
+
+        # make sure script can be run
+        os.chmod(runPath, 0o777)
+
+        # return path to script
+        return runPath
 
 # end =========================================================================

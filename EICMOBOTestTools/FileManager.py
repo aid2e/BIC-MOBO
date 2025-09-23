@@ -60,7 +60,26 @@ def GetSuffix(stage, analysis = ""):
         suffix = "_" + analysis
     return suffix
 
-def MakeOutName(tag, label, steer, stage, analysis = "", prefix = ""):
+def GetBody(label, steer, stage):
+    """GetBody
+
+    Construct body (input, steering file, stage) of
+    file/script name
+
+    Args:
+      label:    the label associated with the input
+      steer:    the tag associated with the input steering file
+      stage:    the tag associated with the relevant stage of the trial
+    Returns:
+      body of file/script name
+    """
+    sstage = "" if stage == "" else "_" + stage
+    slabel = "" if label == "" else "_" + label
+    ssteer = "" if steer == "" else "_" + steer
+    body   = sstage + slabel + ssteer
+    return body
+
+def MakeOutName(tag, label = "", steer = "", stage = "", analysis = "", prefix = ""):
     """MakeOutName
 
     Creates output file name for
@@ -78,11 +97,12 @@ def MakeOutName(tag, label, steer, stage, analysis = "", prefix = ""):
     """
 
     prefix = "aid2e_" if prefix == "" else "aid2e_" + prefix + "_"
+    body   = GetBody(label, steer, stage)
     suffix = GetSuffix(stage, analysis)
-    name   = prefix + stage + "." + tag + "_" + label + "_" + steer + suffix + ".root"
+    name   = prefix + tag + body + suffix + ".root"
     return name 
 
-def MakeScriptName(tag, label, steer, stage):
+def MakeScriptName(tag, label = "", steer = "", stage = ""):
     """MakeSimScriptName
 
     Creates file name for Geant4
@@ -96,7 +116,8 @@ def MakeScriptName(tag, label, steer, stage):
     Returns:
       script name
     """
-    return "do_aid2e_" + stage + "." + tag + "_" + label + "_" + steer + ".sh"
+    body = GetBody(label, steer, stage)
+    return "do_aid2e_" + tag + body + ".sh"
 
 def MakeSetCommands(setup, config):
     """MakeSetCommands
