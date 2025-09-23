@@ -1,10 +1,12 @@
 # =============================================================================
-## @file   test-eic-tools.py
+## @file   test-extended-eic-tools.py
 #  @author Derek Anderson
 #  @date   09.02.2025
 # -----------------------------------------------------------------------------
 ## @brief A small script to test various features
-#    of the EICMOBOTestTools module.
+#    of the EICMOBOTestTools module, including some
+#    of the "extended" features such as modifying
+#    EICrecon parameters and multiple detectors.
 #
 #  TODO convert to use pytest
 # =============================================================================
@@ -16,8 +18,8 @@ import EICMOBOTestTools as emt
 # (0) Test ConfigParser -------------------------------------------------------
 
 # these should work
-enable2 = emt.GetParameter("enable_staves_2", "parameters_config.json")
-enable3 = emt.GetParameter("enable_staves_3", "parameters_config.json")
+enable2 = emt.GetParameter("enable_staves_2", "parameters_extended.config")
+enable3 = emt.GetParameter("enable_staves_3", "parameters_extended.config")
 
 # grab variables
 path2, type2, units2 = emt.GetPathElementAndUnits(enable2)
@@ -27,7 +29,7 @@ print(f"[0][enable_staves_2] path = {path2}, type = {type2}, units = {units2}")
 print(f"[0][enable_staves_3] path = {path3}, type = {type3}, units = {units3}")
 
 try:
-    enable3 = emt.GetParameter("eanble_satvse_3", "parameters_config.json")
+    enable3 = emt.GetParameter("eanble_satvse_3", "parameters_extended.config")
 except:
     print(f"[0][enable_staves_3] exception raised!")
 finally:
@@ -52,14 +54,17 @@ print(f"[1][Test A] config file {configA} created")
 
 # create a 2nd compact file with multiple
 # subsystems modified
-enable5 = emt.GetParameter("enable_staves_5", "parameters_config.json")
+enable5 = emt.GetParameter("enable_staves_5", "parameters_extended.config")
+dsnout  = emt.GetParameter("snout_length", "parameters_extended.config")
 geditor.EditCompact(enable5, 1, "test1B")
-print(f"[1][test B] set value of stave 5 to 1")
+geditor.EditCompact(dsnout, 23., "test1B")
+print(f"[1][test B] set value of stave 5 to 1, and the dRICH snout length to 23 cm")
 
 # this one should create a new config file,
 # and the 2nd line should add the modified
 # dRICH file
 configB = geditor.EditConfig(enable5, "test1B")
+configB = geditor.EditConfig(dsnout, "test1B")
 print(f"[1][test B] config file {configB} created")
 
 # (2) Test generators  --------------------------------------------------------
@@ -93,8 +98,14 @@ print(f"[2][Test B] created driver scripts for simulation:")
 print(f"  {runsimA}")
 print(f"  {runsimB}")
 
-# create a rec generator
+# create a rec generator and parse parameter
+# config for easy use
 recgen = emt.RecGenerator("run_config.json")
+params = emt.ReadJsonFile("parameters_extended.config")
+
+# collect reconstruction parameters for command
+recgen.AddParamToArgs(params["parameters"]["cap_adc"], 8192)
+recgen.AddParamToArgs(params["parameters"]["dynamic_range"], 1300) 
 
 # try to create a reco command
 dorecA = recgen.MakeCommand("test2A", intest, "central.e5ele.py")
