@@ -57,6 +57,7 @@ This repository is structured like so:
   | `parameters_config.json` | defines design parameters to optimize with |
   | `objectives` | collects analysis scripts to calculate objectives for optimize for |
   | `steering` | collects steering files for running single particle simulations |
+  | `examples` | collects of example config files, scripts, etc. for illustrating some of the extended functionality |
   | `EICMOBOTestTools` | a python module which consolidates various tools for interfacing with the EIC software stack |
 
 TODO: will be expanded/modified as development proceeds
