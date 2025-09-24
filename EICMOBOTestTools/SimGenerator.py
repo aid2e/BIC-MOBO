@@ -50,7 +50,7 @@ class SimGenerator:
         outFile = FileManager.MakeOutName(tag, label, steeTag, "sim")
 
         # make sure output directory
-        # exist for trial
+        # exists for trial
         outDir = self.cfgRun["out_path"] + "/" + tag
         FileManager.MakeDir(outDir)
 
@@ -88,7 +88,7 @@ class SimGenerator:
         """
 
         # make sure run directory
-        # exist for trial
+        # exists for trial
         runDir = self.cfgRun["run_path"] + "/" + tag
         FileManager.MakeDir(runDir)
 
