@@ -168,6 +168,9 @@ class TrialManager:
         runScript = FileManager.MakeScriptName(tag)
         runPath   = runDir + "/" + runScript
 
+        # TODO add a DONE message at the end
+        # to make checking easy
+
         # compose script
         with open(runPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
