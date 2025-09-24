@@ -49,7 +49,7 @@ def CalculateReso(
     for iframe, frame in enumerate(reader.get("events")):
 
         # grab truth-cluster associations from frame
-        assocs = frame.get("EcalBarrelTruthClusterAssociations")
+        assocs = frame.get("EcalBarrelClusterAssociations")
 
         # now hunt down clusters associated with electron
         for assoc in assocs:

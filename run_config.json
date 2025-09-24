@@ -32,6 +32,9 @@
         "EcalBarrelImagingRecHits",
         "EcalBarrelImagingClusters",
         "EcalBarrelImagingClusterAssociations",
-        "EcalBarrelClusters"
+        "EcalBarrelClusters",
+        "EcalBarrelClusterAssociations",
+        "EcalBarrelTruthClusters",
+        "EcalBarrelTruthClusterAssociations"
     ]
 }
