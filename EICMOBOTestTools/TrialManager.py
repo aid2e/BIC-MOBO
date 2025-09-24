@@ -99,12 +99,10 @@ class TrialManager:
         self.__SetRecoArgs(params)
 
         # create commands to set detector path, config
-        # FIXME maybe DoGeometryEdits should just return the config
-        #   name w/o the .xml
-        cfgPath, cfgFile = FileManager.SplitPathAndFile(trialCfg)
+        cfgFile = FileManager.GetConfigFromPath(trialCfg)
         setInstall, setConfig = FileManager.MakeSetCommands(
             self.cfgRun["epic_setup"],
-            cfgFile.replace(".xml", "")
+            cfgFile
         )
         commands = [setInstall, setConfig]
 
@@ -140,8 +138,26 @@ class TrialManager:
                     )
                 )
 
-            # TODO add merging command here
-            # TODO add analysis command here
+            # step 3: generate relevant merging/analysis commands
+            doMerge, merged = self.anaGen.MakeMergeCommand(tag, inKey)
+            commands.append(doMerge)
+
+            # find objectives requiring current input
+            for anaKey, anaCfg in self.cfgAna["objectives"].items():
+
+                # skip if not needing input 
+                if anaCfg["input"] != inKey:
+                   continue
+
+                # otherwise generate command to run analysis
+                commands.append(
+                   self.anaGen.MakeCommand(
+                       tag,
+                       inKey,
+                       anaKey,
+                       merged
+                   )
+                )
 
         # make sure run directory
         # exists for trial
@@ -156,7 +172,7 @@ class TrialManager:
         with open(runPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
             for command in commands:
-                script.write(command + "\n")
+                script.write(command + "\n\n")
 
         # make sure script can be run
         os.chmod(runPath, 0o777)

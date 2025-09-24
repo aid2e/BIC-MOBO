@@ -5,7 +5,7 @@
             "input" : "single_electron",
             "path"  : "/home/dereka/aid2e/dev/ForBICStage1/BIC-MOBO/objectives",
             "exec"  : "BICEnergyResolution.py",
-            "rule"  : "<EXEC> -i <INPUT> -o <OUTPUT> -p 22"
+            "rule"  : "python <EXEC> -i <INPUT> -o <OUTPUT> -p 11"
         }
     }
 }

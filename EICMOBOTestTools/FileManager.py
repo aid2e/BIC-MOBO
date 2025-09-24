@@ -25,6 +25,21 @@ def SplitPathAndFile(filepath):
     path = os.path.dirname(filepath)
     return path, file
 
+def GetConfigFromPath(filepath):
+    """GetConfigFromPath
+
+    Helper method to extract
+    epic config file from a
+    provided absolute path.
+
+    Args:
+      filepath: absolute path to the config file
+    Returns:
+      the config file name without extension
+    """
+    path, file = SplitPathAndFile(filepath)
+    return file.replace(".xml", "")
+
 def ConvertSteeringToTag(steer):
     """ConvertSteeringToTag
 
@@ -39,6 +54,25 @@ def ConvertSteeringToTag(steer):
     tag = os.path.splitext(os.path.basename(steer))[0]
     tag = tag.replace(".", "_")
     return tag 
+
+def GetBody(label, steer, stage):
+    """GetBody
+
+    Construct body (input, steering file, stage) of
+    file/script name
+
+    Args:
+      label:    the label associated with the input
+      steer:    the tag associated with the input steering file
+      stage:    the tag associated with the relevant stage of the trial
+    Returns:
+      body of file/script name
+    """
+    sstage = "" if stage == "" else "_" + stage
+    slabel = "" if label == "" else "_" + label
+    ssteer = "" if steer == "" else "_" + steer
+    body   = sstage + slabel + ssteer
+    return body
 
 def GetSuffix(stage, analysis = ""):
     """GetSuffix
@@ -60,24 +94,17 @@ def GetSuffix(stage, analysis = ""):
         suffix = "_" + analysis
     return suffix
 
-def GetBody(label, steer, stage):
-    """GetBody
+def MakeDir(path):
+    """MakeDir
 
-    Construct body (input, steering file, stage) of
-    file/script name
+    Creates a directory if it
+    doesn't exist.
 
     Args:
-      label:    the label associated with the input
-      steer:    the tag associated with the input steering file
-      stage:    the tag associated with the relevant stage of the trial
-    Returns:
-      body of file/script name
+      path: the path to the new directory
     """
-    sstage = "" if stage == "" else "_" + stage
-    slabel = "" if label == "" else "_" + label
-    ssteer = "" if steer == "" else "_" + steer
-    body   = sstage + slabel + ssteer
-    return body
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 def MakeOutName(tag, label = "", steer = "", stage = "", analysis = "", prefix = ""):
     """MakeOutName
@@ -102,17 +129,18 @@ def MakeOutName(tag, label = "", steer = "", stage = "", analysis = "", prefix =
     name   = prefix + tag + body + suffix + ".root"
     return name 
 
-def MakeScriptName(tag, label = "", steer = "", stage = ""):
+def MakeScriptName(tag, label = "", steer = "", stage = "", analysis = ""):
     """MakeSimScriptName
 
     Creates file name for Geant4
     runner script.
 
     Args:
-      tag:   the tag associated with the current trial
-      label: the label associated with the input
-      steer: the tag associated with the input steering file
-      stage: the tag associated with the relevant stage of the trail
+      tag:      the tag associated with the current trial
+      label:    the label associated with the input
+      steer:    the tag associated with the input steering file
+      stage:    the tag associated with the relevant stage of the trial
+      analysis: optional tag associated with the analysis being run
     Returns:
       script name
     """
@@ -134,17 +162,5 @@ def MakeSetCommands(setup, config):
     setInsall = "source " + setup
     setConfig = "export DETECTOR_CONFIG=" + config
     return setInsall, setConfig
-
-def MakeDir(path):
-    """MakeDir
-
-    Creates a directory if it
-    doesn't exist.
-
-    Args:
-      path: the path to the new directory
-    """
-    if not os.path.exists(path):
-        os.makedirs(path)
 
 # end =========================================================================

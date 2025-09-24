@@ -103,12 +103,37 @@ print(f"[2][Test C] Created commands to do reconstruction:")
 print(f"  {dorecA}")
 print(f"  {dorecB}")
 
-# and now try to create a simulation reconstruction script
+# and now try to create a reconstruction driver script
 runrecA = recgen.MakeScript("test2A", intest, "central.e5ele.py", conFileA, dorecA)
 runrecB = recgen.MakeScript("test2B", intest, "central.e5ele.py", conFileB, dorecB)
 print(f"[2][Test D] Created driver scripts for reconstruction:")
 print(f"  {runrecA}")
 print(f"  {runrecB}")
+
+# create an ana generator
+anagen = emt.AnaGenerator("run_config.json", "objectives_config.json")
+
+# recreate output name for input to
+# test ana generator
+steeTag = emt.ConvertSteeringToTag("central.e5ele.py")
+recOutA = emt.MakeOutName("test2A", intest, steeTag, "rec")
+recOutB = emt.MakeOutName("test2B", intest, steeTag, "rec")
+outDirA = enviro["out_path"] + "/test2A/" + recOutA
+outDirB = enviro["out_path"] + "/test2B/" + recOutB
+
+# try to create an analysis command
+doanaA = anagen.MakeCommand("test2A", intest, "ElectronEnergyResolution", outDirA)
+doanaB = anagen.MakeCommand("test2B", intest, "ElectronEnergyResolution", outDirB)
+print(f"[2][Test E] Created commands to do analysis")
+print(f"  {doanaA}")
+print(f"  {doanaB}")
+
+# and finally try to create an analysis script
+runanaA = anagen.MakeScript("test2A", intest, "ElectronEnergyResolution", doanaA)
+runanaB = anagen.MakeScript("test2B", intest, "ElectronEnergyResolution", doanaB)
+print(f"[2][Test F] Created driver scripts for analysis")
+print(f"  {runanaA}")
+print(f"  {runanaB}")
 
 # (3) Test trial manager ------------------------------------------------------
 

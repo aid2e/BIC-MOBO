@@ -121,4 +121,47 @@ print(f"[2][Test D] Created driver scripts for reconstruction:")
 print(f"  {runrecA}")
 print(f"  {runrecB}")
 
+# create an ana generator
+anagen = emt.AnaGenerator("run_config.json", "objectives_config.json")
+
+# recreate output name for input to
+# test ana generator
+steeTag = emt.ConvertSteeringToTag("central.e5ele.py")
+recOutA = emt.MakeOutName("test2A", intest, steeTag, "rec")
+recOutB = emt.MakeOutName("test2B", intest, steeTag, "rec")
+outDirA = enviro["out_path"] + "/test2A/" + recOutA
+outDirB = enviro["out_path"] + "/test2B/" + recOutB
+
+# try to create an analysis command
+doanaA = anagen.MakeCommand("test2A", intest, "ElectronEnergyResolution", outDirA)
+doanaB = anagen.MakeCommand("test2B", intest, "ElectronEnergyResolution", outDirB)
+print(f"[2][Test E] Created commands to do analysis")
+print(f"  {doanaA}")
+print(f"  {doanaB}")
+
+# and finally try to create an analysis script
+runanaA = anagen.MakeScript("test2A", intest, "ElectronEnergyResolution", doanaA)
+runanaB = anagen.MakeScript("test2B", intest, "ElectronEnergyResolution", doanaB)
+print(f"[2][Test F] Created driver scripts for analysis")
+print(f"  {runanaA}")
+print(f"  {runanaB}")
+
+# (3) Test trial manager ------------------------------------------------------
+
+# create a trial manager
+triman = emt.TrialManager("run_config.json", "parameters_config.json", "objectives_config.json")
+
+# create new parameters to test
+nupar3 = {
+    "enable_staves_2" : 1,
+    "enable_staves_3" : 0,
+    "enable_staves_5" : 1,
+    "enable_staves_6" : 1
+}
+
+# make run script
+dorun = triman.MakeTrialScript("test3", nupar3)
+print(f"[3] Created driver script for entire trial:")
+print(f"  {dorun}")
+
 # end =========================================================================
