@@ -9,6 +9,8 @@
 #  TODO convert to use pytest
 # =============================================================================
 
+import pprint
+
 import EICMOBOTestTools as emt
 
 
@@ -122,11 +124,13 @@ outDirA = enviro["out_path"] + "/test2A/" + recOutA
 outDirB = enviro["out_path"] + "/test2B/" + recOutB
 
 # try to create an analysis command
-doanaA = anagen.MakeCommand("test2A", intest, "ElectronEnergyResolution", outDirA)
-doanaB = anagen.MakeCommand("test2B", intest, "ElectronEnergyResolution", outDirB)
+doanaA, ofileA = anagen.MakeCommand("test2A", intest, "ElectronEnergyResolution", outDirA)
+doanaB, ofileB = anagen.MakeCommand("test2B", intest, "ElectronEnergyResolution", outDirB)
 print(f"[2][Test E] Created commands to do analysis")
-print(f"  {doanaA}")
-print(f"  {doanaB}")
+print(f"  (A) command = {doanaA}")
+print(f"      output  = {ofileA}")
+print(f"  (B) command = {doanaB}")
+print(f"      output  = {ofileB}")
 
 # and finally try to create an analysis script
 runanaA = anagen.MakeScript("test2A", intest, "ElectronEnergyResolution", doanaA)
@@ -149,8 +153,10 @@ nupar3 = {
 }
 
 # make run script
-dorun = triman.MakeTrialScript("test3", nupar3)
+dorun3, ofiles3 = triman.MakeTrialScript("test3", nupar3)
 print(f"[3] Created driver script for entire trial:")
-print(f"  {dorun}")
+print(f"  script  = {dorun3}")
+print(f"  outputs =")
+pprint.pprint(ofiles3)
 
 # end =========================================================================

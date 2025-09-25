@@ -72,7 +72,7 @@ class AnaGenerator:
           analysis: the tag associated with the analysis being run
           infile:   the path to the input file to process 
         Returns:
-          command to be run
+          tuple of the command to be run and the output file
         """
 
         # make sure output directory
@@ -94,7 +94,7 @@ class AnaGenerator:
         command = command.replace("<EXEC>", exePath)
         command = command.replace("<INPUT>", infile)
         command = command.replace("<OUTPUT>", outPath)
-        return command
+        return command, outPath
 
     def MakeScript(self, tag, label, analysis, command):
         """MakeScript

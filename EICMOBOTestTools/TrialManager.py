@@ -110,6 +110,7 @@ class TrialManager:
 
         # step 2: generate relevant simulation,
         # reconstruction commands
+        outFiles = dict()
         for inKey, inCfg in self.cfgRun["sim_input"].items():
 
             # if there are multiple steering files,
@@ -149,15 +150,16 @@ class TrialManager:
                 if anaCfg["input"] != inKey:
                    continue
 
-                # otherwise generate command to run analysis
-                commands.append(
-                   self.anaGen.MakeCommand(
-                       tag,
-                       inKey,
-                       anaKey,
-                       merged
-                   )
-                )
+                # otherwise generate command to run analysis and
+                # its output file
+                command, outFile = self.anaGen.MakeCommand(tag,
+                                                           inKey,
+                                                           anaKey,
+                                                           merged)
+                # append analysis command and output file
+                # to appropriate lists/dictionaries
+                commands.append(command)
+                outFiles[anaKey] = outFile
 
         # make sure run directory
         # exists for trial
@@ -167,9 +169,6 @@ class TrialManager:
         # construct script name
         runScript = FileManager.MakeScriptName(tag)
         runPath   = runDir + "/" + runScript
-
-        # TODO add a DONE message at the end
-        # to make checking easy
 
         # compose script
         with open(runPath, 'w') as script:
@@ -181,6 +180,6 @@ class TrialManager:
         os.chmod(runPath, 0o777)
 
         # return path to script
-        return runPath
+        return runPath, outFiles
 
 # end =========================================================================
