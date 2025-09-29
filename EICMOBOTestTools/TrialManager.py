@@ -146,9 +146,13 @@ class TrialManager:
             # find objectives requiring current input
             for anaKey, anaCfg in self.cfgAna["objectives"].items():
 
+                # skip if objective is not an analysis
+                if anaCfg["stage"] != "ana":
+                    continue
+
                 # skip if not needing input 
                 if anaCfg["input"] != inKey:
-                   continue
+                    continue
 
                 # otherwise generate command to run analysis and
                 # its output file
