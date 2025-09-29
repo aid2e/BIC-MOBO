@@ -3,9 +3,12 @@
 #  @author Derek Anderson
 #  @date   09.25.2025
 # -----------------------------------------------------------------------------
-#  Main executable and wrapper script for
-#  running the BIC-MOBO problem.
+## @brief Main executable and wrapper script for
+#    running the BIC-MOBO problem.
 # =============================================================================
+
+import os
+import subprocess
 
 from ax.service.ax_client import AxClient, ObjectiveProperties
 from scheduler import AxScheduler, JobLibRunner
@@ -13,41 +16,54 @@ from scheduler import AxScheduler, JobLibRunner
 import AID2ETestTools as att
 import EICMOBOTestTools as emt
 
-def counter(function):
-    """counter
-
-    Decorator to count how many times
-    a function's been called
-    """
-    def wrapped(parameterization):
-        wrapped.calls += 1
-        return function(parameterization)
-    wrapped.calls = 0
-    return wrapped
-
-#@counter
 def RunObjectives(*args, **kwargs):
     # TODO
-    #   - translate call # into tag
-    #   - create trial manager and script
-    #     to run
-    #   - run script
     #   - extract objectives from output
     #   - create and return dictionary
     #     of objectives
 
+    # create tag for trial
+    tag = "AxTrial" + str(RunObjectives.counter)
+    RunObjectives.counter += 1
+
+    # extract path to script being run currently
+    main_path, main_file = emt.SplitPathAndFile(
+        os.path.realpath(__file__)
+    )
+
+    # determine paths to config files
+    #   -- FIXME this is brittle!
+    run_path  = main_path + "/run_config.json"
+    par_path  = main_path + "/parameters_config.json"
+    obj_path  = main_path + "/objectives_config.json"
+
+    # parse run config to extract path to eic-shell 
+    cfg_run   = emt.ReadJsonFile(run_path)
+    eic_shell = cfg_run["eic_shell"]
+
+    # create trial manager
+    trial = emt.TrialManager(run_path,
+                             par_path,
+                             obj_path)
+
+    # create and run script
+    script, ofiles = trial.MakeTrialScript(tag, kwargs)
+    subprocess.run([eic_shell, "--", script])
+
     # dummy objective
     objective = 0
     for parVal in kwargs.values():
-        objective -= parVal
+        objective = objective - parVal
     return {"ElectronEnergyResolution" : objective}
+
+# make sure trial counter starts at 0
+RunObjectives.counter = 0
 
 def main():
     # TODO
     #   - save everything for analysis
 
-    # load config files
-    cfg_run = emt.ReadJsonFile("run_config.json")
+    # load relevant config files
     cfg_exp = emt.ReadJsonFile("problem_config.json")
     cfg_par = emt.ReadJsonFile("parameters_config.json")
     cfg_obj = emt.ReadJsonFile("objectives_config.json")
@@ -72,7 +88,7 @@ def main():
     scheduler.set_objective_function(RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = 10)
+    best = scheduler.run_optimization(max_trials = 2)
     print("Optimization complete! Best parameters:\n", best)
 
 if __name__ == "__main__":
