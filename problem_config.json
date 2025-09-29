@@ -1,10 +1,10 @@
 {
     "_comment"      : "Configures problem for Ax",
     "name"          : "BIC Optimization",
-    "problem_name"  : "BIC-MOBO",
+    "problem_name"  : "bic_mobo",
     "WORKING_DIR"   : "WORKDIR",
     "OUTPUT_DIR"    : "OUTDIR",
-    "OUTPUT_NAME"   : "drich_optimization_test",
+    "OUTPUT_NAME"   : "bic_mobo",
     "n_sobol"       : 25,
     "n_mobo"        : 75,
     "n_batch_sobol" : 10,
