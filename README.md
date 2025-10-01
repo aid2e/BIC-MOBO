@@ -17,7 +17,7 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 ### Steps:
 
 - [x] Create simplified environment creation/deletion scripts
-- [ ] Run optimization locally on BIC simulation using scheduler
+- [x] Run optimization locally on BIC simulation using scheduler
       with one objective, energy resolution
 - [ ] Run workflow with one objective on hPC resources via
       SLURM using scheduler
@@ -50,17 +50,28 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 
 This repository is structured like so:
 
-  | Code | Description |
-  |------|-------------|
-  | `run_config.json` | defines paths to EIC software, components, executables to be used, etc. |
-  | `problem_config.json` | defines metadata and parameters for optimization algorithms |
-  | `parameters_config.json` | defines design parameters to optimize with |
+  | File/Directory | Description |
+  |----------------|-------------|
+  | `bic-mobo.yml` | conda/mamba environment file |
+  | `create-environment` | script to create bic-mobo conda/mamba environment |
+  | `remove-environment` | script to remove bic-mobo conda/mamba environment |
+  | `run-bic-mobo.py` | wrapper script and point-of-entry to the problem |
+  | `configurations` | collects various configuration files that define the problem |
   | `objectives` | collects analysis scripts to calculate objectives for optimize for |
   | `steering` | collects steering files for running single particle simulations |
   | `examples` | collects of example config files, scripts, etc. for illustrating some of the extended functionality |
+  | `tests` | collects test scripts for unit tests |
   | `EICMOBOTestTools` | a python module which consolidates various tools for interfacing with the EIC software stack |
+  | `AID2ETestTools` | a python module which consolidates various tools for interfacing with Ax |
 
-TODO: will be expanded/modified as development proceeds
+There are four configuration files which define the parameters of the problem.
+
+  | File | Description |
+  |------|-------------|
+  | `run.config` | defines paths to EIC software, components, executables to be used, etc. |
+  | `problem.config` | defines metadata and parameters for optimization algorithms |
+  | `parameters.config` | defines design parameters to optimize with |
+  | `objectives.config` | defines objectives to optimize for |
 
 ## Installation
 
@@ -82,7 +93,8 @@ At any point, this environment can be deleted with
 ```
 
 Then, install the [AID2E scheduler](https://github.com/aid2e/scheduler_epic)
-following the instructions in its repository.
+following the instructions in its repository. Remember to configure the
+scheduler appropriately if you're going to run with SLURM, PanDA, etc.
 
 ## Running the framework
 
@@ -97,14 +109,14 @@ cmake --build build
 cmake --install build
 ```
 
-Then, modify `run_config.json` so that the paths point to your
+Then, modify `configurations/run.config` so that the paths point to your
 installations and relevent scripts, eg.
 ```
 {
     "_comment"   : "Configures runtime options, and paths to EIC software components",
-    "out_path"   : "<where-the-output-goes>/out",
-    "run_path"   : "<where-the-running-goes>/run",
-    "log_path"   : "<where-the-logs-go>/log",
+    "out_path"   : "<where-the-output-goes>",
+    "run_path"   : "<where-the-running-happens>,
+    "log_path"   : "<where-the-logs-go>",
     "eic_shell"  : "<path-to-your-script>/eic-shell",
     "epic_setup" : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
     "det_path"   : "<where-the-geo-goes>/epic/install/share/epic",
@@ -112,7 +124,7 @@ installations and relevent scripts, eg.
     "sim_exec"   : "npsim",
     "sim_input"  : {
         "location" : "<where-the-mobo-goes>/BIC-MOBO/steering",
-        "type"     : "single"
+        "type"     : "gun"
     },
     "reco_exec"   : "eicrecon"
     "rec_collect" : [
@@ -131,6 +143,7 @@ installations and relevent scripts, eg.
         "EcalBarrelClusters"
     ]
 }
+
 ```
 
 Where the angle brackets should be replaced with the appropriate
@@ -138,4 +151,17 @@ absolute paths. The values `det_path` and `det_config` should be
 what `echo $DETECTOR_PATH` and `echo $DETECTOR_CONFIG` return after
 sourcing your installation of the geometry.
 
-TODO: fill in remainder when `main` is ready.
+And finally, modify `configurations/problem.config` to make sure the
+Ax output is placed in the appropriate directory, eg.
+```
+{
+    "_comment"     : "Configures problem for Ax",
+    "name"         : "BIC Optimization",
+    "problem_name" : "bic_mobo",
+    "OUTPUT_DIR"   : "<where-the-output-goes>"
+}
+
+Once appropriately configured, the optimization is run with:
+```
+python run-bic-mobo.py
+```
