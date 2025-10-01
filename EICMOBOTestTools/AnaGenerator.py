@@ -55,7 +55,7 @@ class AnaGenerator:
         toMergePaths = outDir + "/" + toMergeFiles
 
         # construct command
-        command = "hadd " + mergePath + " " + toMergePaths
+        command = "hadd -f " + mergePath + " " + toMergePaths
 
         # return command and path to merged file
         return command, mergePath
