@@ -160,6 +160,7 @@ Ax output is placed in the appropriate directory, eg.
     "problem_name" : "bic_mobo",
     "OUTPUT_DIR"   : "<where-the-output-goes>"
 }
+```
 
 Once appropriately configured, the optimization is run with:
 ```
