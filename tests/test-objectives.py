@@ -1,13 +1,18 @@
 # =============================================================================
-## @file   TestObjectives.py
+## @file   test-objectives.py
 #  @author Derek Anderson
 #  @date   08.29.2025
 # -----------------------------------------------------------------------------
-#  Driver script to test run objective
-#  methods
+## @Driver script to test run objective
+#    methods
+#
+#  TODO convert to use pytest
 # =============================================================================
 
-import BICEnergyResolution as eres
+import sys
+sys.path.append('../')
+
+import objectives.BICEnergyResolution as eres
 
 # test resolution calculation on electrons
 ele_reso = eres.CalculateReso(

@@ -10,6 +10,8 @@
 # =============================================================================
 
 import pprint
+import sys
+sys.path.append('../')
 
 import EICMOBOTestTools as emt
 
@@ -18,8 +20,8 @@ import EICMOBOTestTools as emt
 # (0) Test ConfigParser -------------------------------------------------------
 
 # these should work
-enable2 = emt.GetParameter("enable_staves_2", "parameters_config.json")
-enable3 = emt.GetParameter("enable_staves_3", "parameters_config.json")
+enable2 = emt.GetParameter("enable_staves_2", "../configuration/parameters.config")
+enable3 = emt.GetParameter("enable_staves_3", "../configuration/parameters.config")
 
 # grab variables
 path2, type2, units2 = emt.GetPathElementAndUnits(enable2)
@@ -29,7 +31,7 @@ print(f"[0][enable_staves_2] path = {path2}, type = {type2}, units = {units2}")
 print(f"[0][enable_staves_3] path = {path3}, type = {type3}, units = {units3}")
 
 try:
-    enable3 = emt.GetParameter("eanble_satvse_3", "parameters_config.json")
+    enable3 = emt.GetParameter("eanble_satvse_3", "parameters.config")
 except:
     print(f"[0][enable_staves_3] exception raised!")
 finally:
@@ -38,7 +40,7 @@ finally:
 # (1) Test GeometryEditor -----------------------------------------------------
 
 # create a geometry editor
-geditor = emt.GeometryEditor("run_config.json")
+geditor = emt.GeometryEditor("../configuration/run.config")
 
 # edit a couple parameters in one compact file
 geditor.EditCompact(enable2, 1, "test1A")
@@ -54,7 +56,7 @@ print(f"[1][Test A] config file {configA} created")
 
 # create a 2nd compact file with multiple
 # subsystems modified
-enable5 = emt.GetParameter("enable_staves_5", "parameters_config.json")
+enable5 = emt.GetParameter("enable_staves_5", "../configuration/parameters.config")
 geditor.EditCompact(enable5, 1, "test1B")
 print(f"[1][test B] set value of stave 5 to 1")
 
@@ -68,8 +70,8 @@ print(f"[1][test B] config file {configB} created")
 
 # create a sim generator and parse enviroment
 # config for easy use
-simgen = emt.SimGenerator("run_config.json")
-enviro = emt.ReadJsonFile("run_config.json")
+simgen = emt.SimGenerator("../configuration/run.config")
+enviro = emt.ReadJsonFile("../configuration/run.config")
 intest = "single_electron"
 inputs = enviro["sim_input"][intest]
 
@@ -96,7 +98,7 @@ print(f"  {runsimA}")
 print(f"  {runsimB}")
 
 # create a rec generator
-recgen = emt.RecGenerator("run_config.json")
+recgen = emt.RecGenerator("../configuration/run.config")
 
 # try to create a reco command
 dorecA = recgen.MakeCommand("test2A", intest, "central.e5ele.py")
@@ -113,7 +115,7 @@ print(f"  {runrecA}")
 print(f"  {runrecB}")
 
 # create an ana generator
-anagen = emt.AnaGenerator("run_config.json", "objectives_config.json")
+anagen = emt.AnaGenerator("../configuration/run.config", "../configuration/objectives.config")
 
 # recreate output name for input to
 # test ana generator
@@ -142,7 +144,9 @@ print(f"  {runanaB}")
 # (3) Test trial manager ------------------------------------------------------
 
 # create a trial manager
-triman = emt.TrialManager("run_config.json", "parameters_config.json", "objectives_config.json")
+triman = emt.TrialManager("../configuration/run.config",
+                          "../configuration/parameters.config",
+                          "../configuration/objectives.config")
 
 # create new parameters to test
 nupar3 = {

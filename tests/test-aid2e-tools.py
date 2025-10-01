@@ -10,6 +10,8 @@
 # =============================================================================
 
 import pprint
+import sys
+sys.path.append('../')
 
 import AID2ETestTools as att
 import EICMOBOTestTools as emt
@@ -19,10 +21,10 @@ import EICMOBOTestTools as emt
 # (0) Test config converters -------------------------------------------------- 
 
 # load config files
-cfg_run = emt.ReadJsonFile("run_config.json")
-cfg_exp = emt.ReadJsonFile("problem_config.json")
-cfg_par = emt.ReadJsonFile("parameters_config.json")
-cfg_obj = emt.ReadJsonFile("objectives_config.json")
+cfg_run = emt.ReadJsonFile("../configuration/run.config")
+cfg_exp = emt.ReadJsonFile("../configuration/problem.config")
+cfg_par = emt.ReadJsonFile("../configuration/parameters.config")
+cfg_obj = emt.ReadJsonFile("../configuration/objectives.config")
 
 # convert parameter config
 ax_pars = att.ConvertParamConfig(cfg_par)
