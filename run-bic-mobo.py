@@ -44,9 +44,9 @@ def RunObjectives(*args, **kwargs):
 
     # determine paths to config files
     #   -- FIXME this is brittle!
-    run_path  = main_path + "/configuration/run_config.json"
-    par_path  = main_path + "/configuration/parameters_config.json"
-    obj_path  = main_path + "/configuration/objectives_config.json"
+    run_path  = main_path + "/configuration/run.config"
+    par_path  = main_path + "/configuration/parameters.config"
+    obj_path  = main_path + "/configuration/objectives.config"
 
     # parse run config to extract path to eic-shell 
     cfg_run   = emt.ReadJsonFile(run_path)
@@ -96,9 +96,9 @@ def main():
     """
 
     # load relevant config files
-    cfg_exp = emt.ReadJsonFile("problem_config.json")
-    cfg_par = emt.ReadJsonFile("parameters_config.json")
-    cfg_obj = emt.ReadJsonFile("objectives_config.json")
+    cfg_exp = emt.ReadJsonFile("problem.config")
+    cfg_par = emt.ReadJsonFile("parameters.config")
+    cfg_obj = emt.ReadJsonFile("objectives.config")
 
     # translate parameter, objective options
     # into ax-compliant ones
