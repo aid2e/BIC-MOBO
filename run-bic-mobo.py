@@ -94,16 +94,24 @@ def main():
     Args:
       -r: specify runner (optional)
     """
+    # extract path to script being run currently
+    #   - FIXME this should get automated!
+    main_path, main_file = emt.SplitPathAndFile(
+        os.path.realpath(__file__)
+    )
+    exp_path  = main_path + "/configuration/problem.config"
+    par_path  = main_path + "/configuration/parameters.config"
+    obj_path  = main_path + "/configuration/objectives.config"
 
     # load relevant config files
     cfg_exp = emt.ReadJsonFile("problem.config")
     cfg_par = emt.ReadJsonFile("parameters.config")
     cfg_obj = emt.ReadJsonFile("objectives.config")
 
-    # translate parameter, objective options
-    # into ax-compliant ones
-    ax_pars = att.ConvertParamConfig(cfg_par)
-    ax_objs = att.ConvertObjectConfig(cfg_obj)
+    # load relevant config files
+    cfg_exp = emt.ReadJsonFile(exp_path)
+    cfg_par = emt.ReadJsonFile(par_path)
+    cfg_obj = emt.ReadJsonFile(obj_path)
 
     # create ax client
     ax_client = AxClient()
