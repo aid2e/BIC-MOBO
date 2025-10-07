@@ -151,14 +151,32 @@ absolute paths. The values `det_path` and `det_config` should be
 what `echo $DETECTOR_PATH` and `echo $DETECTOR_CONFIG` return after
 sourcing your installation of the geometry.
 
-And finally, modify `configurations/problem.config` to make sure the
-Ax output is placed in the appropriate directory, eg.
+And finally, modify `configurations/problem.config` and
+`configurations/objectives.config` to make sure the
+Ax output is placed in the appropriate directory and the code is
+picking up the correct objective scripts, eg.
 ```
 {
     "_comment"     : "Configures problem for Ax",
     "name"         : "BIC Optimization",
     "problem_name" : "bic_mobo",
     "OUTPUT_DIR"   : "<where-the-output-goes>"
+}
+```
+
+```
+{
+    "_comment"   : "Configure objectives to optimize for",
+    "objectives" : {
+        "ElectronEnergyResolution" : {
+            "input" : "single_electron",
+            "path"  : "<where-the-mobo-goes>/BIC-MOBO/objectives",
+            "exec"  : "BICEnergyResolution.py",
+            "rule"  : "python <EXEC> -i <INPUT> -o <OUTPUT> -p 11",
+            "stage" : "ana",
+            "goal"  : "minimize"
+        }
+    }
 }
 ```
 
