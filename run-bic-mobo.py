@@ -104,14 +104,14 @@ def main():
     obj_path  = main_path + "/configuration/objectives.config"
 
     # load relevant config files
-    cfg_exp = emt.ReadJsonFile("problem.config")
-    cfg_par = emt.ReadJsonFile("parameters.config")
-    cfg_obj = emt.ReadJsonFile("objectives.config")
-
-    # load relevant config files
     cfg_exp = emt.ReadJsonFile(exp_path)
     cfg_par = emt.ReadJsonFile(par_path)
     cfg_obj = emt.ReadJsonFile(obj_path)
+
+    # translate parameter, objective options
+    # into ax-compliant ones
+    ax_pars = att.ConvertParamConfig(cfg_par)
+    ax_objs = att.ConvertObjectConfig(cfg_obj)
 
     # create ax client
     ax_client = AxClient()
