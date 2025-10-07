@@ -7,8 +7,10 @@
 #    running the BIC-MOBO problem.
 # =============================================================================
 
+import datetime
 import os
 import pickle
+import re
 import subprocess
 
 from ax.service.ax_client import AxClient, ObjectiveProperties
@@ -32,9 +34,11 @@ def RunObjectives(*args, **kwargs):
       dictionary of objectives and their values
     """
 
+
     # create tag for trial
-    tag = "AxTrial" + str(RunObjectives.counter)
-    RunObjectives.counter += 1
+    time = str(datetime.datetime.now())
+    time = re.sub(r'[.\-:\ ]', '', time)
+    tag = f"AxTrial{time}"
 
     # extract path to script being run currently
     main_path, main_file = emt.SplitPathAndFile(
@@ -70,9 +74,6 @@ def RunObjectives(*args, **kwargs):
     return {
         "ElectronEnergyResolution" : eResEle
     }
-
-# make sure trial counter starts at 0
-RunObjectives.counter = 0
 
 def main():
     """main
