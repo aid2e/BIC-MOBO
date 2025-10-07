@@ -9,7 +9,6 @@
 
 import os
 import pickle
-import ROOT
 import subprocess
 
 from ax.service.ax_client import AxClient, ObjectiveProperties
@@ -62,9 +61,10 @@ def RunObjectives(*args, **kwargs):
     subprocess.run([eic_shell, "--", script])
 
     # extract electron resolution 
-    ofResEle = ROOT.TFile.Open(ofiles["ElectronEnergyResolution"])
-    fResEle  = ofResEle.Get("fEneRes")
-    eResEle  = fResEle.GetParameter(2)
+    ofResEle = ofiles["ElectronEnergyResolution"].replace(".root", ".txt")
+    eResEle  = None
+    with open(ofResEle) as out:
+        eResEle = float(out.read().splitlines()[0])
 
     # return dictionary of objectives
     return {
