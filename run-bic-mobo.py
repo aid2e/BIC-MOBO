@@ -7,9 +7,10 @@
 #    running the BIC-MOBO problem.
 # =============================================================================
 
+import datetime
 import os
 import pickle
-import ROOT
+import re
 import subprocess
 
 from ax.service.ax_client import AxClient, ObjectiveProperties
@@ -33,9 +34,11 @@ def RunObjectives(*args, **kwargs):
       dictionary of objectives and their values
     """
 
+
     # create tag for trial
-    tag = "AxTrial" + str(RunObjectives.counter)
-    RunObjectives.counter += 1
+    time = str(datetime.datetime.now())
+    time = re.sub(r'[.\-:\ ]', '', time)
+    tag = f"AxTrial{time}"
 
     # extract path to script being run currently
     main_path, main_file = emt.SplitPathAndFile(
@@ -62,17 +65,15 @@ def RunObjectives(*args, **kwargs):
     subprocess.run([eic_shell, "--", script])
 
     # extract electron resolution 
-    ofResEle = ROOT.TFile.Open(ofiles["ElectronEnergyResolution"])
-    fResEle  = ofResEle.Get("fEneRes")
-    eResEle  = fResEle.GetParameter(2)
+    ofResEle = ofiles["ElectronEnergyResolution"].replace(".root", ".txt")
+    eResEle  = None
+    with open(ofResEle) as out:
+        eResEle = float(out.read().splitlines()[0])
 
     # return dictionary of objectives
     return {
         "ElectronEnergyResolution" : eResEle
     }
-
-# make sure trial counter starts at 0
-RunObjectives.counter = 0
 
 def main():
     """main
@@ -104,14 +105,14 @@ def main():
     obj_path  = main_path + "/configuration/objectives.config"
 
     # load relevant config files
-    cfg_exp = emt.ReadJsonFile("problem.config")
-    cfg_par = emt.ReadJsonFile("parameters.config")
-    cfg_obj = emt.ReadJsonFile("objectives.config")
-
-    # load relevant config files
     cfg_exp = emt.ReadJsonFile(exp_path)
     cfg_par = emt.ReadJsonFile(par_path)
     cfg_obj = emt.ReadJsonFile(obj_path)
+
+    # translate parameter, objective options
+    # into ax-compliant ones
+    ax_pars = att.ConvertParamConfig(cfg_par)
+    ax_objs = att.ConvertObjectConfig(cfg_obj)
 
     # create ax client
     ax_client = AxClient()
