@@ -10,8 +10,6 @@
 # =============================================================================
 
 import pprint
-import sys
-sys.path.append('../')
 
 import EICMOBOTestTools as emt
 
