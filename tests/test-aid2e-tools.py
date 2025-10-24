@@ -10,8 +10,6 @@
 # =============================================================================
 
 import pprint
-import sys
-sys.path.append('../')
 
 import AID2ETestTools as att
 import EICMOBOTestTools as emt
