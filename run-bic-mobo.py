@@ -8,8 +8,11 @@
 # =============================================================================
 
 import argparse
+import datetime
 import os
 import pickle
+import re
+import subprocess
 
 from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.service.utils.report_utils import exp_to_df
@@ -18,7 +21,59 @@ from scheduler import AxScheduler, JobLibRunner, SlurmRunner
 import AID2ETestTools as att
 import EICMOBOTestTools as emt
 
-from RunObjectives import DoTestScript
+def RunObjectives(*args, **kwargs):
+    """RunObjectives
+
+    Runs trial (simulation, reconstruction,
+    and all analyses) for provided set of
+    updated parameters.
+
+    Args:
+      args:   any positional arguments
+      kwargs: any keyword arguments
+    Returns:
+      dictionary of objectives and their values
+    """
+
+    # create tag for trial
+    time = str(datetime.datetime.now())
+    time = re.sub(r'[.\-:\ ]', '', time)
+    tag = f"AxTrial{time}"
+
+    # extract path to script being run currently
+    main_path, main_file = emt.SplitPathAndFile(
+        os.path.realpath(__file__)
+    )
+
+    # determine paths to config files
+    #   -- FIXME this is brittle!
+    run_path = main_path + "/configuration/run.config"
+    par_path = main_path + "/configuration/parameters.config"
+    obj_path = main_path + "/configuration/objectives.config"
+
+    # parse run config to extract path to eic-shell
+    cfg_run   = emt.ReadJsonFile(run_path)
+    eic_shell = cfg_run["eic_shell"]
+
+    # create trial manager
+    trial = emt.TrialManager(run_path,
+                             par_path,
+                             obj_path)
+
+    # create and run script
+    script, ofiles = trial.MakeTrialScript(tag, kwargs)
+    subprocess.run([eic_shell, "--", script])
+
+    # extract electron resolution
+    ofResEle = ofiles["ElectronEnergyResolution"].replace(".root", ".txt")
+    eResEle  = None
+    with open(ofResEle) as out:
+        eResEle = float(out.read().splitlines()[0])
+
+    # return dictionary of objectives
+    return {
+        "ElectronEnergyResolution" : eResEle
+    }
 
 def main(*args, **kwargs):
     """main
@@ -94,10 +149,12 @@ def main(*args, **kwargs):
                 memory        = "8G",
                 cpus_per_task = 4,
                 config        = {
-                    'modules' : ['python', 'singularity'],
                     'sbatch_options' : {
+                        'account'   : 'eic',
                         'mail-user' : 'dereka@jlab.org',
-                        'mail-type' : 'END,FAIL'
+                        'mail-type' : 'END,FAIL',
+                        'output'    : cfg_run["log_path"],
+                        'error'     : cfg_run["log_path"]
                     }
                 }
             )
@@ -112,10 +169,10 @@ def main(*args, **kwargs):
             'job_output_dir' : cfg_exp["OUTPUT_DIR"],
         }
     )
-    scheduler.set_objective_function(DoTestScript)
+    scheduler.set_objective_function(RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = 10)
+    best = scheduler.run_optimization(max_trials = 710)
     print("Optimization complete! Best parameters:\n", best)
 
     # create paths to output files
