@@ -190,3 +190,10 @@ Once appropriately configured, the optimization is run with:
 ```
 python run-bic-mobo.py
 ```
+
+Various analyses (in progress) can be run on the optimization
+output with the script `run-analyses.py`.  After updating the
+appropariate paths/options in the script, do:
+```
+python run-analyses.py
+```
