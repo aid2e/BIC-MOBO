@@ -27,7 +27,7 @@ from ax.utils.notebook.plotting import init_notebook_plotting, render
 print("\n  Starting analyses!")
 
 # set global options
-datetag = "d27m10y2025"
+datetag = "d28910y2025"
 
 # -----------------------------------------------------------------------------
 # Basic analyses
@@ -42,6 +42,8 @@ print(f"    Located output: {len(outfiles)} trials to analyze")
 for file in outfiles:
     print(f"      -- {file.name}")
 
+# read in data ----------------------------------------------------------------
+
 # announce file reading starting
 print("    Reading in metrics:")
 
@@ -51,19 +53,28 @@ outframes = []
 for file in outfiles:
 
     # open file, grab metric(s)
-    metric = None
+    data = None
     with open(file, 'r') as f:
-        metric = f.readlines() 
-    print(f"      -- [{trial}] {metric}")
+        data = np.loadtxt(f, delimiter = ',')
+    print(f"      -- [{trial}] {data}")
 
     # collect data to store 
-    resodata  = pd.DataFrame({'reso' : float(metric[0])}, index = [0])
+    resodata  = pd.DataFrame({'reso' : float(data[0])}, index = [0])
+    meandata  = pd.DataFrame({'mean' : float(data[1])}, index = [0])
     filedata  = pd.DataFrame({'file' : file.stem}, index = [0])
     trialdata = pd.DataFrame({'trial' : trial}, index = [0])
 
     # join data into a single frame, append
     # to big frame, and increment trial no.
-    frame = pd.concat([resodata, filedata, trialdata], axis = 1)
+    frame = pd.concat(
+        [
+            resodata,
+            meandata,
+            filedata,
+            trialdata
+        ],
+        axis = 1
+    )
     outframes.append(frame)
     trial += 1
 
@@ -72,30 +83,58 @@ outdata = pd.concat(outframes, ignore_index = True)
 print(f"    Combined data:")
 print(outdata.head())
 
+# create plots ----------------------------------------------------------------
+
 # set plot style
 sns.set(style = "whitegrid")
 
-# make metrics vs. trial no. plot
-plt.figure(figsize = (10, 6))
-plt.scatter(
+# create a figure for objectives vs. data
+fig, (reso, mean) = plt.subplots(
+    nrows = 1,
+    ncols = 2,
+    figsize = (10, 8),
+    sharex = True,
+    sharey = False
+)
+
+# plot resolution in 1st panel
+reso.scatter(
     outdata["trial"],
     outdata["reso"],
     color = "midnightblue",
     alpha = 0.5
 )
-plt.plot(
+reso.plot(
     outdata["trial"],
     outdata["reso"],
-    color = "slateblue",
+    color = "mediumblue",
     linewidth = 0.8
 )
+reso.set_title("Electron Resolution vs. Trial Number")
+reso.set_xlabel("Trial")
+reso.set_ylabel("Electron Resolution")
+
+# plot mean in 2nd panel
+mean.scatter(
+    outdata["trial"],
+    outdata["mean"],
+    color = "darkred",
+    alpha = 0.5
+)
+mean.plot(
+    outdata["trial"],
+    outdata["mean"],
+    color = "indianred",
+    linewidth = 0.8
+)
+mean.set_title("Electron Mean %-diff vs. Trial Number")
+mean.set_xlabel("Trial")
+mean.set_ylabel("Mean %-diff")
+
+# now create name
 resname = "eleResoVsTrial." + datetag + ".png"
 
-# add title, etc. and save
-plt.title("e- Resolution vs. Trial Number")
-plt.xlabel("Trial")
-plt.ylabel("e- energy resolution")
-plt.grid(True, linestyle = ":", alpha = 0.5)
+# save and show figure
 plt.tight_layout()
 plt.savefig(resname, dpi=300, bbox_inches = "tight")
 plt.show()

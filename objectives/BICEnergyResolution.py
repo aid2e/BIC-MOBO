@@ -89,13 +89,15 @@ def CalculateReso(
         out.WriteObject(fres, "fEneRes")
         out.Close()
 
-    # grab objective
+    # grab objective and other info
     reso = fres.GetParameter(2)
+    mean = fres.GetParameter(1)
 
-    # write it out to a text file for extraction later
+    # write them out to a text file for extraction later
     otext = ofile.replace(".root", ".txt")
     with open(otext, 'w') as out:
-        out.write(f"{reso}")
+        out.write(f"{reso},")
+        out.write(f"{mean}")
 
     # and return calculated resolution
     return fres.GetParameter(2)
