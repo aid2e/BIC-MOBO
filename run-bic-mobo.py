@@ -9,7 +9,9 @@
 
 import argparse
 import datetime
+import numpy
 import os
+import pandas
 import pickle
 import re
 import subprocess
@@ -64,11 +66,19 @@ def RunObjectives(*args, **kwargs):
     script, ofiles = trial.MakeTrialScript(tag, kwargs)
     subprocess.run([eic_shell, "--", script])
 
-    # extract electron resolution
+    # write out values of parameters to
+    # output file(s) for analysis later
     ofResEle = ofiles["ElectronEnergyResolution"].replace(".root", ".txt")
-    eResEle  = None
-    with open(ofResEle) as out:
-        eResEle = float(out.read().splitlines()[0])
+    with open(ofResEle, 'a') as out:
+        for param, value in kwargs.items():
+            out.write("\n")
+            out.write(f"{value}")
+
+    # extract electron resolution
+    eResEle = None
+    with open(ofResEle, 'r') as out:
+        outData = out.readlines()
+        eResEle = float(outData[0])
 
     # return dictionary of objectives
     return {
@@ -172,7 +182,7 @@ def main(*args, **kwargs):
     scheduler.set_objective_function(RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = 710)
+    best = scheduler.run_optimization(max_trials = 3)
     print("Optimization complete! Best parameters:\n", best)
 
     # create paths to output files
