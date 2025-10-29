@@ -66,13 +66,18 @@ def RunObjectives(*args, **kwargs):
     script, ofiles = trial.MakeTrialScript(tag, kwargs)
     subprocess.run([eic_shell, "--", script])
 
-    # TODO write parameterization to out file(s) here
+    # write out values of parameters to
+    # output file(s) for analysis later
+    ofResEle = ofiles["ElectronEnergyResolution"].replace(".root", ".txt")
+    with open(ofResEle, 'a') as out:
+        for param, value in kwargs.items():
+            out.write("\n")
+            out.write(f"{value}")
 
     # extract electron resolution
-    ofResEle = ofiles["ElectronEnergyResolution"].replace(".root", ".txt")
-    eResEle  = None
+    eResEle = None
     with open(ofResEle, 'r') as out:
-        outData = numpy.loadtxt(out, delimiter = ',')
+        outData = out.readlines()
         eResEle = float(outData[0])
 
     # return dictionary of objectives

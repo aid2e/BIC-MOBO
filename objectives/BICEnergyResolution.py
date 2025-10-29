@@ -96,7 +96,7 @@ def CalculateReso(
     # write them out to a text file for extraction later
     otext = ofile.replace(".root", ".txt")
     with open(otext, 'w') as out:
-        out.write(f"{reso},")
+        out.write(f"{reso}\n")
         out.write(f"{mean}")
 
     # and return calculated resolution

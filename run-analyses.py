@@ -26,8 +26,10 @@ from ax.utils.notebook.plotting import init_notebook_plotting, render
 # announce start
 print("\n  Starting analyses!")
 
+# options ---------------------------------------------------------------------
+
 # set global options
-datetag = "d28910y2025"
+datetag = "d29m10y2025"
 
 # -----------------------------------------------------------------------------
 # Basic analyses
@@ -52,17 +54,30 @@ trial     = 0
 outframes = []
 for file in outfiles:
 
-    # open file, grab metric(s)
+    # open file, grab metric(s) and related data
     data = None
     with open(file, 'r') as f:
-        data = np.loadtxt(f, delimiter = ',')
-    print(f"      -- [{trial}] {data}")
+        data = f.readlines()
+        print(f"      -- [{trial}] {data}")
 
     # collect data to store 
     resodata  = pd.DataFrame({'reso' : float(data[0])}, index = [0])
     meandata  = pd.DataFrame({'mean' : float(data[1])}, index = [0])
+    stavdata2 = pd.DataFrame({'stave2' : int(data[2])}, index = [0])
+    stavdata3 = pd.DataFrame({'stave3' : int(data[3])}, index = [0])
+    stavdata4 = pd.DataFrame({'stave4' : int(data[4])}, index = [0])
+    stavdata5 = pd.DataFrame({'stave5' : int(data[5])}, index = [0])
+    stavdata6 = pd.DataFrame({'stave6' : int(data[6])}, index = [0])
     filedata  = pd.DataFrame({'file' : file.stem}, index = [0])
     trialdata = pd.DataFrame({'trial' : trial}, index = [0])
+
+    # calculate the number of staves active
+    nstave = 0
+    for stave in data[2:]:
+        active = int(stave)
+        if active == 1:
+            nstave += 1
+    nstavdata = pd.DataFrame({'nstave' : nstave}, index = [0])
 
     # join data into a single frame, append
     # to big frame, and increment trial no.
@@ -70,6 +85,12 @@ for file in outfiles:
         [
             resodata,
             meandata,
+            stavdata2,
+            stavdata3,
+            stavdata4,
+            stavdata5,
+            stavdata6,
+            nstavdata,
             filedata,
             trialdata
         ],
@@ -86,50 +107,72 @@ print(outdata.head())
 # create plots ----------------------------------------------------------------
 
 # set plot style
-sns.set(style = "whitegrid")
+sns.set(style = "white")
 
 # create a figure for objectives vs. data
-fig, (reso, mean) = plt.subplots(
-    nrows = 1,
+fig, plots = plt.subplots(
+    nrows = 2,
     ncols = 2,
-    figsize = (10, 8),
-    sharex = True,
-    sharey = False
+    figsize = (12, 12),
+    sharex = False,
+    sharey = True
 )
 
-# plot resolution in 1st panel
-reso.scatter(
+# plot resolution vs. trial in top-left panel
+plots[0, 0].scatter(
     outdata["trial"],
     outdata["reso"],
     color = "midnightblue",
     alpha = 0.5
 )
-reso.plot(
+plots[0, 0].plot(
     outdata["trial"],
     outdata["reso"],
     color = "mediumblue",
     linewidth = 0.8
 )
-reso.set_title("Electron Resolution vs. Trial Number")
-reso.set_xlabel("Trial")
-reso.set_ylabel("Electron Resolution")
+plots[0, 0].set_title("Electron Resolution vs. Trial Number")
+plots[0, 0].set_xlabel("Trial")
+plots[0, 0].set_ylabel("Electron Resolution")
 
-# plot mean in 2nd panel
-mean.scatter(
+# plot resolution vs. n active stave in top-right panel
+plots[0, 1].scatter(
+    outdata["nstave"],
+    outdata["reso"],
+    color = "midnightblue",
+    alpha = 0.5
+)
+plots[0, 1].set_title("Electron Resolution vs. N Active Staves")
+plots[0, 1].set_xlabel("N Active Staves")
+plots[0, 1].set_ylabel("Electron Resolution")
+
+# plot mean vs. trial in bottom-left panel
+plots[1, 0].scatter(
     outdata["trial"],
     outdata["mean"],
     color = "darkred",
     alpha = 0.5
 )
-mean.plot(
+plots[1, 0].plot(
     outdata["trial"],
     outdata["mean"],
     color = "indianred",
     linewidth = 0.8
 )
-mean.set_title("Electron Mean %-diff vs. Trial Number")
-mean.set_xlabel("Trial")
-mean.set_ylabel("Mean %-diff")
+plots[1, 0].set_title("Electron Mean %-diff vs. Trial Number")
+plots[1, 0].set_xlabel("Trial")
+plots[1, 0].set_ylabel("Mean %-diff")
+
+# plot mean vs. n active stave in bottom-right panel
+plots[1, 1].scatter(
+    outdata["nstave"],
+    outdata["mean"],
+    color = "darkorange",
+    alpha = 0.5
+)
+plots[1, 1].set_title("Electron Mean %-diff vs. N Active Staves")
+plots[1, 1].set_xlabel("N Active Staves")
+plots[1, 1].set_ylabel("Electron Resolution")
 
 # now create name
 resname = "eleResoVsTrial." + datetag + ".png"
