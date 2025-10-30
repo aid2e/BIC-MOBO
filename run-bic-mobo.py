@@ -182,7 +182,7 @@ def main(*args, **kwargs):
     scheduler.set_objective_function(RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = 3)
+    best = scheduler.run_optimization(max_trials = 6)
     print("Optimization complete! Best parameters:\n", best)
 
     # create paths to output files
