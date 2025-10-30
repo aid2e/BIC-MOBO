@@ -11,4 +11,4 @@ SIM.gun.distribution = "cos(theta)"
 SIM.gun.thetaMin     = 45*degree
 SIM.gun.thetaMax     = 135*degree
 
-SIM.numberOfEvents = 50
+SIM.numberOfEvents = 625
