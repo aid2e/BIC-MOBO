@@ -72,7 +72,8 @@ for file in outfiles:
     trialdata = pd.DataFrame({'trial' : trial}, index = [0])
 
     # calculate the number of staves active
-    nstave = 0
+    #   -- NOTE stave 1 is always active!
+    nstave = 1
     for stave in data[2:]:
         active = int(stave)
         if active == 1:
