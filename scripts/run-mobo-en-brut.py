@@ -47,7 +47,7 @@ def main(*args, **kwargs):
         "--partition=ifarm",
         "--mail-user=dereka@jlab.org",
         "--mail-type=END,FAIL",
-        "--time=00:30:00",
+        "--time=24:00:00",
         "--mem=8G",
         "--cpus-per-task=4"
     ]
@@ -58,7 +58,10 @@ def main(*args, **kwargs):
     #   - entry 4 = enable_staves_6
     params = [
         [1, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0]
+        [1, 1, 0, 0, 0],
+        [1, 1, 1, 0, 0],
+        [1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1]
     ]
 
     # extract path to script being run currently
