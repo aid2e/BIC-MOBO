@@ -29,15 +29,18 @@ print("\n  Starting analyses!")
 # options ---------------------------------------------------------------------
 
 # set global options
-datetag = "d29m10y2025"
+basetag = "brutRunTest"
+datetag = "d3m11y2025"
+outpath = "../out/"
+outglob = "BrutTrial"
 
 # -----------------------------------------------------------------------------
 # Basic analyses
 # -----------------------------------------------------------------------------
 
 # glob all trial output
-outpath  = pathlib.Path("../out/")
-outfiles = sorted(outpath.glob("AxTrial*/*.txt"))
+filepath = pathlib.Path(outpath)
+outfiles = sorted(filepath.glob(outglob + "*/*.txt"))
 
 # announce what files are going to be processed
 print(f"    Located output: {len(outfiles)} trials to analyze")
@@ -105,82 +108,112 @@ outdata = pd.concat(outframes, ignore_index = True)
 print(f"    Combined data:")
 print(outdata.head())
 
-# create plots ----------------------------------------------------------------
+# create matplot plots --------------------------------------------------------
 
 # set plot style
 sns.set(style = "white")
 
-# create a figure for objectives vs. data
-fig, plots = plt.subplots(
-    nrows = 2,
-    ncols = 2,
-    figsize = (12, 12),
-    sharex = False,
-    sharey = True
+# create a figure for vars vs. trial
+trialfig, trialplots = plt.subplots(
+    nrows = 3,
+    ncols = 1,
+    figsize = (8, 12),
+    sharex = True,
+    sharey = False
 )
 
-# plot resolution vs. trial in top-left panel
-plots[0, 0].scatter(
+# plot resolution vs. trial in top panel
+trialplots[0].scatter(
     outdata["trial"],
     outdata["reso"],
     color = "midnightblue",
     alpha = 0.5
 )
-plots[0, 0].plot(
+trialplots[0].plot(
     outdata["trial"],
     outdata["reso"],
     color = "mediumblue",
     linewidth = 0.8
 )
-plots[0, 0].set_title("Electron Resolution vs. Trial Number")
-plots[0, 0].set_xlabel("Trial")
-plots[0, 0].set_ylabel("Electron Resolution")
+trialplots[0].set_title("Electron Resolution vs. Trial Number")
+trialplots[0].set_xlabel("Trial")
+trialplots[0].set_ylabel("Electron Resolution")
 
-# plot resolution vs. n active stave in top-right panel
-plots[0, 1].scatter(
+# plot mean vs. trial in middle panel
+trialplots[1].scatter(
+    outdata["trial"],
+    outdata["mean"],
+    color = "indigo",
+    alpha = 0.5
+)
+trialplots[1].plot(
+    outdata["trial"],
+    outdata["mean"],
+    color = "blueviolet",
+    linewidth = 0.8
+)
+trialplots[1].set_title("Electron Mean %-Diff vs. Trial Number")
+trialplots[1].set_xlabel("Trial")
+trialplots[1].set_ylabel("Mean %-Diff")
+
+# plot n active stave vs. trial in bottom panel
+trialplots[2].scatter(
+    outdata["trial"],
+    outdata["nstave"],
+    color = "darkred",
+    alpha = 0.5
+)
+trialplots[2].plot(
+    outdata["trial"],
+    outdata["nstave"],
+    color = "indianred",
+    linewidth = 0.8
+)
+trialplots[2].set_title("N Active Staves vs. Trial Number")
+trialplots[2].set_xlabel("Trial")
+trialplots[2].set_ylabel("N Active Staves")
+
+# now create vs. trial figure name and save
+trialname = basetag + ".vsTrialNum." + datetag + ".png"
+plt.tight_layout()
+plt.savefig(trialname, dpi = 300, bbox_inches = "tight")
+plt.show()
+
+# create a figure for vars vs. nstave
+stavefig, staveplots = plt.subplots(
+    nrows = 2,
+    ncols = 1,
+    figsize = (8, 8),
+    sharex = True,
+    sharey = False
+)
+
+# plot resolution vs. n active stave in top panel
+staveplots[0].scatter(
     outdata["nstave"],
     outdata["reso"],
     color = "midnightblue",
     alpha = 0.5
 )
-plots[0, 1].set_title("Electron Resolution vs. N Active Staves")
-plots[0, 1].set_xlabel("N Active Staves")
-plots[0, 1].set_ylabel("Electron Resolution")
-
-# plot mean vs. trial in bottom-left panel
-plots[1, 0].scatter(
-    outdata["trial"],
-    outdata["mean"],
-    color = "darkred",
-    alpha = 0.5
-)
-plots[1, 0].plot(
-    outdata["trial"],
-    outdata["mean"],
-    color = "indianred",
-    linewidth = 0.8
-)
-plots[1, 0].set_title("Electron Mean %-diff vs. Trial Number")
-plots[1, 0].set_xlabel("Trial")
-plots[1, 0].set_ylabel("Mean %-diff")
+staveplots[0].set_title("Electron Resolution vs. N Active Staves")
+staveplots[0].set_xlabel("N Active Staves")
+staveplots[0].set_ylabel("Electron Resolution")
 
 # plot mean vs. n active stave in bottom-right panel
-plots[1, 1].scatter(
+staveplots[1].scatter(
     outdata["nstave"],
     outdata["mean"],
-    color = "darkorange",
+    color = "indigo",
     alpha = 0.5
 )
-plots[1, 1].set_title("Electron Mean %-diff vs. N Active Staves")
-plots[1, 1].set_xlabel("N Active Staves")
-plots[1, 1].set_ylabel("Electron Resolution")
+staveplots[1].set_title("Electron Mean %-Diff vs. N Active Staves")
+staveplots[1].set_xlabel("N Active Staves")
+staveplots[1].set_ylabel("Mean %-Diff")
 
-# now create name
-resname = "eleResoVsTrial." + datetag + ".png"
-
-# save and show figure
+# now create vs. nstave figure name and save
+stavename = basetag + ".vsNStave." + datetag + ".png"
 plt.tight_layout()
-plt.savefig(resname, dpi=300, bbox_inches = "tight")
+plt.savefig(stavename, dpi = 300, bbox_inches = "tight")
 plt.show()
 
 # -----------------------------------------------------------------------------
