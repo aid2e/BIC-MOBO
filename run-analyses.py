@@ -10,6 +10,7 @@
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 import pathlib
 import seaborn as sns
@@ -32,31 +33,37 @@ class Option:
       baseTag: prefix of analysis output file
       dateTag: tag indicating date/time in analysis output file
       outPath: path to output files
-      outGlob: regex pattern to glob relevent output files
+      outTxt:  regex pattern to glob relevant text output files
+      outRoot: regex patter to glob relevant ROOT output files
       outExp:  saved Ax experiment to analyze
     """
-    doAx    : bool
     doRoot  : bool
+    doAx    : bool
     baseTag : str
     dateTag : str
     outPath : str
-    outGlob : str
+    outTxt  : str
+    outRoot : str
     outExp  : str
 
 # set global options
 GlobalOpts = Option(
-    False,
+    True,
     False,
     "addHistPlots",
     "d5m11y2025",
     "../out",
     "AxTrial*/*.txt",
-    "../out/bic_mobo_exp_out.json"
+    "AxTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
+    "../out/bic_mobo_exp_out.json",
 )
 
 # -----------------------------------------------------------------------------
 # Optional dependencies
 # -----------------------------------------------------------------------------
+
+if GlobalOpts.doRoot:
+    import ROOT
 
 if GlobalOpts.doAx:
     from ax.modelbridge.cross_validation import cross_validate
@@ -66,9 +73,6 @@ if GlobalOpts.doAx:
     from ax.plot.slice import plot_slice
     from ax.service.ax_client import AxClient, ObjectiveProperties
     from ax.utils.notebook.plotting import init_notebook_plotting, render
-
-if GlobalOpts.doRoot:
-    import ROOT
 
 # -----------------------------------------------------------------------------
 # Basic analyses
@@ -84,19 +88,22 @@ def DoBasicAnalyses(opts = GlobalOpts):
       opts: analysis options
     """
 
+    # announce start of basic analyses
+    print("    Running basic analyses")
+
     # glob all trial output
     filePath = pathlib.Path(opts.outPath)
-    outFiles = sorted(filePath.glob(opts.outGlob))
+    outFiles = sorted(filePath.glob(opts.outTxt))
 
     # announce what files are going to be processed
-    print(f"    Located output: {len(outFiles)} trials to analyze")
+    print(f"      Located text output: {len(outFiles)} trials to analyze")
     for file in outFiles:
-        print(f"      -- {file.name}")
+        print(f"        -- {file.name}")
 
     # read in data ------------------------------------------------------------
 
     # announce file reading starting
-    print("    Reading in metrics:")
+    print("      Reading in metrics:")
 
     # store output in a dataframe
     iTrial    = 0
@@ -107,7 +114,7 @@ def DoBasicAnalyses(opts = GlobalOpts):
         data = None
         with open(file, 'r') as f:
             data = f.readlines()
-            print(f"      -- [{iTrial}] {data}")
+            print(f"        -- [{iTrial}] {data}")
 
         # collect data to store
         reso   = pd.DataFrame({'reso' : float(data[0])}, index = [0])
@@ -155,7 +162,7 @@ def DoBasicAnalyses(opts = GlobalOpts):
 
     # now squash frames into 1 big frame
     outData = pd.concat(outFrames, ignore_index = True)
-    print(f"    Combined metrics and data:")
+    print(f"      Combined metrics and data:")
     print(outData.head())
 
     # create matplot plots ----------------------------------------------------
@@ -193,9 +200,9 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "mediumblue",
         linewidth = 0.8
     )
-    trialPlots[0].set_title("Electron Resolution vs. Trial Number")
+    trialPlots[0].set_title(r'$e^{-}$ Resolution vs. Trial Number')
     trialPlots[0].set_xlabel("Trial")
-    trialPlots[0].set_ylabel("Electron Resolution")
+    trialPlots[0].set_ylabel(r'$e^{-}$ Resolution')
 
     # plot mean vs. trial in middle panel
     trialPlots[1].scatter(
@@ -218,9 +225,9 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "blueviolet",
         linewidth = 0.8
     )
-    trialPlots[1].set_title("Electron Mean %-Diff vs. Trial Number")
+    trialPlots[1].set_title(r'$e^{-}$ Mean %-Diff vs. Trial Number')
     trialPlots[1].set_xlabel("Trial")
-    trialPlots[1].set_ylabel("Mean %-Diff")
+    trialPlots[1].set_ylabel(r'$e^{-}$ Mean %-Diff')
 
     # plot n active stave vs. trial in bottom panel
     trialPlots[2].scatter(
@@ -235,15 +242,17 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "indianred",
         linewidth = 0.8
     )
-    trialPlots[2].set_title("N Active Staves vs. Trial Number")
+    trialPlots[2].set_title(r'$N_{\text{staves}}$ vs. Trial Number')
     trialPlots[2].set_xlabel("Trial")
-    trialPlots[2].set_ylabel("N Active Staves")
+    trialPlots[2].set_ylabel(r'$N_{\text{staves}}$')
 
     # now create vs. trial figure name and save
     trialName = opts.baseTag + ".vsTrialNum." + opts.dateTag + ".png"
     plt.tight_layout()
     plt.savefig(trialName, dpi = 300, bbox_inches = "tight")
     plt.show()
+    print(f"      Created figure for variables vs. trial #: {trialName}")
+
 
     # create a figure for vars vs. nstave
     staveFig, stavePlots = plt.subplots(
@@ -261,9 +270,9 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "midnightblue",
         alpha = 0.5
     )
-    stavePlots[0].set_title("Electron Resolution vs. N Active Staves")
-    stavePlots[0].set_xlabel("N Active Staves")
-    stavePlots[0].set_ylabel("Electron Resolution")
+    stavePlots[0].set_title(r'$e^{-}$ Resolution vs. $N_{\text{staves}}$')
+    stavePlots[0].set_xlabel(r'$N_{\text{staves}}$')
+    stavePlots[0].set_ylabel(r'$e^{-}$ Resolution')
 
     # plot mean vs. n active stave in bottom-right panel
     stavePlots[1].scatter(
@@ -272,15 +281,103 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "indigo",
         alpha = 0.5
     )
-    stavePlots[1].set_title("Electron Mean %-Diff vs. N Active Staves")
-    stavePlots[1].set_xlabel("N Active Staves")
-    stavePlots[1].set_ylabel("Mean %-Diff")
+    stavePlots[1].set_title(r'$e^{-}$ Mean %-Diff vs. $N_{\text{staves}}$')
+    stavePlots[1].set_xlabel(r'$N_{\text{staves}}')
+    stavePlots[1].set_ylabel(r'$e^{-}$ Mean %-Diff')
 
     # now create vs. nstave figure name and save
     staveName = opts.baseTag + ".vsNStave." + opts.dateTag + ".png"
     plt.tight_layout()
     plt.savefig(staveName, dpi = 300, bbox_inches = "tight")
     plt.show()
+    print(f"      Created figure for variables vs. N staves: {staveName}")
+
+# -----------------------------------------------------------------------------
+# ROOT analyses
+# -----------------------------------------------------------------------------
+
+def DoRootAnalyses(opts = GlobalOpts):
+    """DoRootAnalyses
+
+    Runs a set of ROOT-
+    based analyses.
+
+    Args:
+      opts: analysis options
+    """
+
+    # announce start of ROOT analyses
+    print("    Running ROOT analyses")
+
+    # glob all trial output
+    filePath = pathlib.Path(opts.outPath)
+    outFiles = sorted(filePath.glob(opts.outRoot))
+
+    # announce what files are going to be processed
+    print(f"      Located ROOT output: {len(outFiles)} trials to analyze")
+    for file in outFiles:
+        print(f"        -- {file.name}")
+
+    # create hist stacks for resolution
+    hResIntVsTrialU = ROOT.THStack(
+       "hResIntVsTrialU",
+       "e^{-} Energy %-Difference vs. Trial Number (Unnormalized);(E_{clust} - E_{par}) / E_{par}; counts"
+    )
+    hResIntVsTrialN = ROOT.THStack(
+       "hResIntVsTrialN",
+       "e^{-} Energy %-Difference vs. Trial Number (Normalized);(E_{clust} - E_{par}) / E_{par}; a.u."
+    )
+    print("      Reading in files:")
+
+    # grab relevant ROOT objects
+    hists  = {}
+    iTrial = 0
+    for file in outFiles:
+
+        # open input file and grab hists
+        iFile   = ROOT.TFile(os.fspath(file.absolute()), "read")
+        hResInt = iFile.Get("hEneRes")
+        print(f"        -- [{iTrial}] hResInt: {hResInt}")
+
+        # create updated names/titles
+        trial = f"Trial {iTrial}"
+        uName = hResInt.GetName() + f"NoNorm_Trial{iTrial}"
+        nName = hResInt.GetName() + f"Normed_Trial{iTrial}"
+
+        # clone histograms
+        hResIntU = hResInt.Clone()
+        hResIntN = hResInt.Clone()
+        hResIntU.SetNameTitle(uName, trial)
+        hResIntN.SetNameTitle(nName, trial)
+
+        # normalize relevant histograms
+        intResInt = hResIntN.Integral()
+        if intResInt > 0.0:
+            hResIntN.Scale(1.0 / intResInt)
+
+        # add to hists to relevant stacks
+        #   -- FIXME something's going on with
+        #      the hist stacking here...
+        hResIntVsTrialU.Add(hResIntU)
+        hResIntVsTrialN.Add(hResIntN)
+
+        # and store in output dicts
+        hists[hResIntU.GetName()] = hResIntVsTrialU
+        hists[hResIntN.GetName()] = hResIntVsTrialN
+        iTrial += 1
+
+    # announce end of loop
+    print("      Collected relevant ROOT objects")
+
+    # TODO
+    #   - Set style of THStacks
+    #   - Draw THStacks
+
+    # save drawn output
+    rootName = opts.baseTag + ".outHists." + opts.dateTag + ".root"
+    with ROOT.TFile(rootName, "recreate") as f:
+        for hist in hists.values():
+            hist.Write()
 
 # -----------------------------------------------------------------------------
 # Ax analyses (not working yet)
@@ -318,22 +415,6 @@ def DoAxAnalyses(opts = GlobalOpts):
     # show arm effect
     render(interact_fitted(model, rel=False))
 
-# -----------------------------------------------------------------------------
-# ROOT analyses (TODO)
-# -----------------------------------------------------------------------------
-
-def DoRootAnalyses(opts = GlobalOpts):
-    """DoRootAnalyses
-
-    Runs a set of ROOT-
-    based analyses.
-
-    Args:
-      opts: analysis options
-    """
-
-    # TODO fill in
-
 # main ========================================================================
 
 if __name__ == "__main__":
@@ -347,7 +428,7 @@ if __name__ == "__main__":
    print(f"      {opts}")
 
    # run analyses
-   DoBasicAnalyses(opts)
+#   DoBasicAnalyses(opts)
    if opts.doAx:
        DoAxAnalyses(opts)
    if opts.doRoot:
