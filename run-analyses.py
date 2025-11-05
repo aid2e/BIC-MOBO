@@ -22,17 +22,16 @@ from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.utils.measurement.synthetic_functions import hartmann6
 from ax.utils.notebook.plotting import init_notebook_plotting, render
 
-
 # announce start
 print("\n  Starting analyses!")
 
 # options ---------------------------------------------------------------------
 
 # set global options
-basetag = "brutRunTest"
-datetag = "d3m11y2025"
+basetag = "addErrors"
+datetag = "d5m11y2025"
 outpath = "../out/"
-outglob = "BrutTrial"
+outglob = "AxTrial"
 
 # -----------------------------------------------------------------------------
 # Basic analyses
@@ -65,19 +64,21 @@ for file in outfiles:
 
     # collect data to store 
     resodata  = pd.DataFrame({'reso' : float(data[0])}, index = [0])
-    meandata  = pd.DataFrame({'mean' : float(data[1])}, index = [0])
-    stavdata2 = pd.DataFrame({'stave2' : int(data[2])}, index = [0])
-    stavdata3 = pd.DataFrame({'stave3' : int(data[3])}, index = [0])
-    stavdata4 = pd.DataFrame({'stave4' : int(data[4])}, index = [0])
-    stavdata5 = pd.DataFrame({'stave5' : int(data[5])}, index = [0])
-    stavdata6 = pd.DataFrame({'stave6' : int(data[6])}, index = [0])
+    eresodata = pd.DataFrame({'ereso' : float(data[1])}, index = [0])
+    meandata  = pd.DataFrame({'mean' : float(data[2])}, index = [0])
+    emeandata = pd.DataFrame({'emean' : float(data[3])}, index = [0])
+    stavdata2 = pd.DataFrame({'stave2' : int(data[4])}, index = [0])
+    stavdata3 = pd.DataFrame({'stave3' : int(data[5])}, index = [0])
+    stavdata4 = pd.DataFrame({'stave4' : int(data[6])}, index = [0])
+    stavdata5 = pd.DataFrame({'stave5' : int(data[7])}, index = [0])
+    stavdata6 = pd.DataFrame({'stave6' : int(data[8])}, index = [0])
     filedata  = pd.DataFrame({'file' : file.stem}, index = [0])
     trialdata = pd.DataFrame({'trial' : trial}, index = [0])
 
     # calculate the number of staves active
     #   -- NOTE stave 1 is always active!
     nstave = 1
-    for stave in data[2:]:
+    for stave in data[4:]:
         active = int(stave)
         if active == 1:
             nstave += 1
@@ -88,7 +89,9 @@ for file in outfiles:
     frame = pd.concat(
         [
             resodata,
+            eresodata,
             meandata,
+            emeandata,
             stavdata2,
             stavdata3,
             stavdata4,
@@ -105,7 +108,7 @@ for file in outfiles:
 
 # now squash frames into 1 big frame
 outdata = pd.concat(outframes, ignore_index = True)
-print(f"    Combined data:")
+print(f"    Combined metrics and data:")
 print(outdata.head())
 
 # create matplot plots --------------------------------------------------------
@@ -129,6 +132,14 @@ trialplots[0].scatter(
     color = "midnightblue",
     alpha = 0.5
 )
+trialplots[0].errorbar(
+    outdata["trial"],
+    outdata["reso"],
+    yerr = outdata["ereso"],
+    ecolor = "midnightblue",
+    capsize = 7,
+    fmt = 'none'
+)
 trialplots[0].plot(
     outdata["trial"],
     outdata["reso"],
@@ -145,6 +156,14 @@ trialplots[1].scatter(
     outdata["mean"],
     color = "indigo",
     alpha = 0.5
+)
+trialplots[1].errorbar(
+    outdata["trial"],
+    outdata["mean"],
+    yerr = outdata["emean"],
+    ecolor = "indigo",
+    capsize = 7,
+    fmt = 'none'
 )
 trialplots[1].plot(
     outdata["trial"],
