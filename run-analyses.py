@@ -36,6 +36,7 @@ class Option:
       outTxt:  regex pattern to glob relevant text output files
       outRoot: regex patter to glob relevant ROOT output files
       outExp:  saved Ax experiment to analyze
+      palette: ROOT color palette to use
     """
     doRoot  : bool
     doAx    : bool
@@ -45,6 +46,7 @@ class Option:
     outTxt  : str
     outRoot : str
     outExp  : str
+    palette : int
 
 # set global options
 GlobalOpts = Option(
@@ -56,6 +58,7 @@ GlobalOpts = Option(
     "AxTrial*/*.txt",
     "AxTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
     "../out/bic_mobo_exp_out.json",
+    60
 )
 
 # -----------------------------------------------------------------------------
@@ -312,13 +315,14 @@ def DoRootAnalyses(opts = GlobalOpts):
     # glob all trial output
     filePath = pathlib.Path(opts.outPath)
     outFiles = sorted(filePath.glob(opts.outRoot))
+    nTrials  = len(outFiles)
 
     # announce what files are going to be processed
     print(f"      Located ROOT output: {len(outFiles)} trials to analyze")
     for file in outFiles:
         print(f"        -- {file.name}")
 
-    # create hist stacks for resolution
+    # create hists for resolution vs. trial
     hResIntVsTrialU = ROOT.THStack(
        "hResIntVsTrialU",
        "e^{-} Energy %-Difference vs. Trial Number (Unnormalized);(E_{clust} - E_{par}) / E_{par}; counts"
@@ -327,10 +331,20 @@ def DoRootAnalyses(opts = GlobalOpts):
        "hResIntVsTrialN",
        "e^{-} Energy %-Difference vs. Trial Number (Normalized);(E_{clust} - E_{par}) / E_{par}; a.u."
     )
+    hResIntVsTrial2D = ROOT.TH2D(
+        "hEneResIntVsTrial2D",
+        "e^{-} Energy %-Difference vs. Trial Number (Normalized);(E_{clust} - E_{par}) / E_{par}; trial",
+        50,
+        -2.,
+        3.,
+        nTrials,
+        0,
+        nTrials
+    )
     print("      Reading in files:")
 
     # grab relevant ROOT objects
-    hists  = {}
+    hists  = []
     iTrial = 0
     for file in outFiles:
 
@@ -340,9 +354,10 @@ def DoRootAnalyses(opts = GlobalOpts):
         print(f"        -- [{iTrial}] hResInt: {hResInt}")
 
         # create updated names/titles
-        trial = f"Trial {iTrial}"
-        uName = hResInt.GetName() + f"NoNorm_Trial{iTrial}"
-        nName = hResInt.GetName() + f"Normed_Trial{iTrial}"
+        sTrial = str(iTrial)
+        trial  = "Trial " + sTrial
+        uName = hResInt.GetName() + "NoNorm_Trial" + sTrial
+        nName = hResInt.GetName() + "Normed_Trial" + sTrial
 
         # clone histograms
         hResIntU = hResInt.Clone()
@@ -350,34 +365,114 @@ def DoRootAnalyses(opts = GlobalOpts):
         hResIntU.SetNameTitle(uName, trial)
         hResIntN.SetNameTitle(nName, trial)
 
+        # adjust attributes
+        hResIntU.SetMarkerStyle(24)
+        hResIntU.SetFillStyle(0)
+        hResIntU.GetXaxis().CenterTitle(1)
+        hResIntU.GetXaxis().SetTitleOffset(1.0)
+        hResIntU.GetYaxis().CenterTitle(1)
+        hResIntN.SetMarkerStyle(24)
+        hResIntN.SetFillStyle(0)
+        hResIntN.GetXaxis().CenterTitle(1)
+        hResIntN.GetXaxis().SetTitleOffset(1.0)
+        hResIntN.GetYaxis().CenterTitle(1)
+
+        # turn off fit visualization
+        hResIntU.GetFunction("fEneRes").SetBit(ROOT.TF1.kNotDraw)
+        hResIntN.GetFunction("fEneRes").SetBit(ROOT.TF1.kNotDraw)
+
+        # make histograms available outside of input file
+        hResIntU.SetDirectory(0)
+        hResIntN.SetDirectory(0)
+
         # normalize relevant histograms
+        fResIntN  = hResIntN.GetFunction("fEneRes")
         intResInt = hResIntN.Integral()
+        ampResInt = fResIntN.GetParameter(0)
         if intResInt > 0.0:
             hResIntN.Scale(1.0 / intResInt)
+            fResIntN.SetParameter(0, ampResInt / intResInt)
 
         # add to hists to relevant stacks
-        #   -- FIXME something's going on with
-        #      the hist stacking here...
         hResIntVsTrialU.Add(hResIntU)
         hResIntVsTrialN.Add(hResIntN)
 
+        # fill row of 2D histogram
+        for iBin in range(1, hResIntN.GetNbinsX() + 1):
+            hResIntVsTrial2D.SetBinContent(
+                iBin,
+                iTrial + 1,
+                hResIntN.GetBinContent(iBin)
+            )
+
         # and store in output dicts
-        hists[hResIntU.GetName()] = hResIntVsTrialU
-        hists[hResIntN.GetName()] = hResIntVsTrialN
+        hists.append(hResIntU)
+        hists.append(hResIntN)
         iTrial += 1
 
     # announce end of loop
-    print("      Collected relevant ROOT objects")
+    print("      Collected relevant ROOT objects:")
+    print(hists)
 
-    # TODO
-    #   - Set style of THStacks
-    #   - Draw THStacks
+    # set color palette and turn off stat boxes
+    ROOT.gStyle.SetPalette(opts.palette)
+    ROOT.gStyle.SetOptStat(0)
+
+    # create unnormalized energy difference vs. trial
+    cResIntVsTrialU = ROOT.TCanvas("cEneResNoNorm", "", 950, 950)
+    cResIntVsTrialU.cd()
+    cResIntVsTrialU.SetRightMargin(0.02)
+    hResIntVsTrialU.Draw("pfc plc pmc nostack")
+    hResIntVsTrialU.GetXaxis().CenterTitle(1)
+    hResIntVsTrialU.GetXaxis().SetTitleOffset(1.2)
+    hResIntVsTrialU.GetYaxis().CenterTitle(1)
+    hResIntVsTrialU.GetYaxis().SetTitleOffset(1.2)
+    cResIntVsTrialU.BuildLegend(0.7, 0.7, 0.9, 0.9, "", "pf")
+
+    canNameU = opts.baseTag + ".eleEneResNoNorm." + opts.dateTag + ".png"
+    cResIntVsTrialU.SaveAs(canNameU)
+    print("      Created unnormalized energy integration resolution vs. trial plot")
+
+    # create normalized energy difference vs. trial
+    cResIntVsTrialN = ROOT.TCanvas("cEneResNormed", "", 950, 950)
+    cResIntVsTrialN.cd()
+    cResIntVsTrialN.SetRightMargin(0.02)
+    hResIntVsTrialN.Draw("pfc plc pmc nostack")
+    hResIntVsTrialN.GetXaxis().CenterTitle(1)
+    hResIntVsTrialN.GetXaxis().SetTitleOffset(1.2)
+    hResIntVsTrialN.GetYaxis().CenterTitle(1)
+    hResIntVsTrialN.GetYaxis().SetTitleOffset(1.2)
+    cResIntVsTrialN.BuildLegend(0.7, 0.7, 0.9, 0.9, "", "pf")
+
+    canNameN = opts.baseTag + ".eleEneResNormed." + opts.dateTag + ".png"
+    cResIntVsTrialN.SaveAs(canNameN)
+    print("      Created normalized energy integration resolution vs. trial plot")
+
+    # create 2D normalized energy differnece vs. trial
+    cResIntVsTrial2D = ROOT.TCanvas("cEneResNormed2D", "", 950, 950)
+    cResIntVsTrial2D.cd()
+    hResIntVsTrial2D.Draw("colz")
+    hResIntVsTrial2D.GetXaxis().CenterTitle(1)
+    hResIntVsTrial2D.GetXaxis().SetTitleOffset(1.2)
+    hResIntVsTrial2D.GetYaxis().CenterTitle(1)
+    hResIntVsTrial2D.GetYaxis().SetTitleOffset(1.2)
+
+    canName2D = opts.baseTag + ".eleEneResNormed2D." + opts.dateTag + ".png"
+    cResIntVsTrial2D.SaveAs(canName2D)
+    print("    Created 2D normalized energy integration resolution vs. trial plot")
 
     # save drawn output
-    rootName = opts.baseTag + ".outHists." + opts.dateTag + ".root"
+    rootName = opts.baseTag + ".rootOutput." + opts.dateTag + ".root"
     with ROOT.TFile(rootName, "recreate") as f:
-        for hist in hists.values():
+        cResIntVsTrialU.Write()
+        cResIntVsTrialN.Write()
+        cResIntVsTrial2D.Write()
+        hResIntVsTrial2D.Write()
+        for hist in hists:
             hist.Write()
+
+    # annuounce saving
+    print("      Saved ROOT objects")
 
 # -----------------------------------------------------------------------------
 # Ax analyses (not working yet)
@@ -428,7 +523,7 @@ if __name__ == "__main__":
    print(f"      {opts}")
 
    # run analyses
-#   DoBasicAnalyses(opts)
+   DoBasicAnalyses(opts)
    if opts.doAx:
        DoAxAnalyses(opts)
    if opts.doRoot:
