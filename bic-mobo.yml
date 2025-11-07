@@ -5,10 +5,11 @@ dependencies:
   - python=3.11.5
   - pip
   - pip:
-    - ax-platform==0.3.6
-    - torch==2.1.0
+    - ax-platform==1.0.0
+    - torch
     - pandas
-    - numpy==1.26.4
+    - numpy
     - matplotlib
+    - seaborn
     - wandb
     - botorch
