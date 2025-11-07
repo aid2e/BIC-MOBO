@@ -18,10 +18,16 @@ import sys
 
 from podio.reading import get_reader
 
+# default arguments
+IFileDefault = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
+OFileDefault = "test_reso.root"
+PDGDefault   = 11
+
+
 def CalculateReso(
-    ifile = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root",
-    ofile = "test_reso.root",
-    pdg   = 11
+    ifile = IFileDefault,
+    ofile = OFileDefault,
+    pdg   = PDGDefault
 ):
     """CalculateReso
 
@@ -91,13 +97,17 @@ def CalculateReso(
 
     # grab objective and other info
     reso = fres.GetParameter(2)
+    eres = fres.GetParError(2)
     mean = fres.GetParameter(1)
+    emea = fres.GetParError(1)
 
     # write them out to a text file for extraction later
     otext = ofile.replace(".root", ".txt")
     with open(otext, 'w') as out:
         out.write(f"{reso}\n")
-        out.write(f"{mean}")
+        out.write(f"{eres}\n")
+        out.write(f"{mean}\n")
+        out.write(f"{emea}")
 
     # and return calculated resolution
     return fres.GetParameter(2)
@@ -108,9 +118,33 @@ if __name__ == "__main__":
 
     # set up argments
     parser = ap.ArgumentParser()
-    parser.add_argument("-i", "--input", help = "Input file")
-    parser.add_argument("-o", "--output", help = "Output file")
-    parser.add_argument("-p", "--pdg", help = "PDG code to look for", type = int)
+    parser.add_argument(
+        "-i",
+        "--input",
+        help = "Input file",
+        nargs = '?',
+        const = IFileDefault,
+        default = IFileDefault,
+        type = str
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help = "Output file",
+        nargs = '?',
+        const = OFileDefault,
+        default = OFileDefault,
+        type = str
+    )
+    parser.add_argument(
+        "-p",
+        "--pdg",
+        help = "PDG code to look for",
+        nargs = '?',
+        const = PDGDefault,
+        default = PDGDefault,
+        type = int
+    )
 
     # grab arguments
     args = parser.parse_args()
