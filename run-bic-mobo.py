@@ -16,6 +16,10 @@ import pickle
 import re
 import subprocess
 
+from ax.core.search_space import SearchSpace
+from ax.generation_strategy.generation_node import GenerationStep
+from ax.generation_strategy.generation_strategy import GenerationStrategy
+from ax.modelbridge.registry import Generators
 from ax.service.ax_client import AxClient, ObjectiveProperties
 from ax.service.utils.report_utils import exp_to_df
 from scheduler import AxScheduler, JobLibRunner, SlurmRunner
@@ -134,8 +138,33 @@ def main(*args, **kwargs):
     ax_pars = att.ConvertParamConfig(cfg_par)
     ax_objs = att.ConvertObjectConfig(cfg_obj)
 
+    # define generation strategy to use
+    #   - FIXME allegedly bandit optimization
+    #     is better for this type of problem
+    #   - TODO try bandit optimization
+    gstrat = GenerationStrategy(
+        steps = [
+            GenerationStep(
+                model = Generators.SOBOL,
+                num_trials = cfg_exp["n_sobol"],
+                min_trials_observed = cfg_exp["min_sobol"],
+                max_parallelism = cfg_exp["n_sobol"]
+            ),
+            GenerationStep(
+                model = Generators.BOTORCH_MODULAR,
+                num_trials = -1,
+                max_parallelism = cfg_exp["max_parallel_gen"]
+            )
+        ]
+    )
+
+    # TODO implement early global stopping here
+
     # create ax client
-    ax_client = AxClient()
+    ax_client = AxClient(
+        generation_strategy = gstrat,
+        enforce_sequential_optimization = False
+    )
     ax_client.create_experiment(
         name = cfg_exp["problem_name"],
         parameters = ax_pars,
@@ -182,7 +211,7 @@ def main(*args, **kwargs):
     scheduler.set_objective_function(RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = 6)
+    best = scheduler.run_optimization(max_trials = cfg_exp["n_max_trials"])
     print("Optimization complete! Best parameters:\n", best)
 
     # create paths to output files

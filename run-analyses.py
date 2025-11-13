@@ -15,6 +15,9 @@ import pandas as pd
 import pathlib
 import seaborn as sns
 
+from ax import Client
+from ax.analysis.plotly.plotly_analysis import PlotlyAnalysisCard
+
 # -----------------------------------------------------------------------------
 # Global Options
 # -----------------------------------------------------------------------------
@@ -51,9 +54,9 @@ class Option:
 # set global options
 GlobalOpts = Option(
     True,
-    False,
-    "addHistPlots",
-    "d5m11y2025",
+    True,
+    "addAxPlots",
+    "d12m11y2025",
     "../out",
     "AxTrial*/*.txt",
     "AxTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
@@ -475,7 +478,7 @@ def DoRootAnalyses(opts = GlobalOpts):
     print("      Saved ROOT objects")
 
 # -----------------------------------------------------------------------------
-# Ax analyses (not working yet)
+# Ax analyses
 # -----------------------------------------------------------------------------
 
 def DoAxAnalyses(opts = GlobalOpts):
@@ -488,27 +491,37 @@ def DoAxAnalyses(opts = GlobalOpts):
       opts: analysis options
     """
 
+    # announce start of Ax analyses
+    print("    Running Ax analyses")
+
     # load saved experiment
-    ax_client = AxClient()
-    ax_client = ax_client.load_from_json_file(
+    client = Client()
+    client = client.load_from_json_file(
         filepath = opts.outExp
     )
-    ax_client.fit_model()
+    print(f"      Loaded experiment from {opts.outExp}")
 
-    # grab model
-    model = ax_client.generation_strategy.model
+    # run calculations
+    cards = client.compute_analyses(display = True)
+    print(f"      Ran calculations:")
+    print(f"        {cards}")
 
-    # create contour plot
-    render(
-        ax_client.get_contour_plot(
-            param_x = "enable_staves_2",
-            param_y = "enable_staves_3",
-            metric_name = "ElectronEnergyResolution"
-        )
-    )
+    # save plots for later
+    for card in cards:
 
-    # show arm effect
-    render(interact_fitted(model, rel=False))
+        # skip summary card (info is already in csv)
+        if card.name == "Summary":
+            continue
+
+        # otherwise, create save html
+        name  = card.name
+        title = card.title
+        title = title.replace(' ', '').replace('.', '').replace(',', 'vs')
+        file  = opts.baseTag + ".axOutput." + name + "." + title + "." + opts.dateTag  + ".html"
+        card.get_figure().write_html(file)
+
+    # announce saving
+    print("      Saved Ax cards")
 
 # main ========================================================================
 
@@ -524,10 +537,10 @@ if __name__ == "__main__":
 
    # run analyses
    DoBasicAnalyses(opts)
-   if opts.doAx:
-       DoAxAnalyses(opts)
    if opts.doRoot:
        DoRootAnalyses(opts)
+   if opts.doAx:
+       DoAxAnalyses(opts)
 
    # announce end
    print("  Analyses complete!\n")
