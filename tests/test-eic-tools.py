@@ -141,10 +141,14 @@ print(f"  {runanaB}")
 
 # (3) Test trial manager ------------------------------------------------------
 
-# create a trial manager
-triman = emt.TrialManager("../configuration/run.config",
-                          "../configuration/parameters.config",
-                          "../configuration/objectives.config")
+# create a trial managers
+trimanA = emt.TrialManager("../configuration/run.config",
+                           "../configuration/parameters.config",
+                           "../configuration/objectives.config",
+                           "test3A")
+trimanB = emt.TrialManager("../configuration/run.config",
+                           "../configuration/parameters.config",
+                           "../configuration/objectives.config")
 
 # create new parameters to test
 nupar3 = {
@@ -155,10 +159,14 @@ nupar3 = {
 }
 
 # make run script
-dorun3, ofiles3 = triman.MakeTrialScript("test3", nupar3)
-print(f"[3] Created driver script for entire trial:")
-print(f"  script  = {dorun3}")
+dorun3A, ofiles3A = trimanA.MakeTrialScript(nupar3)
+print(f"[3][Test A] Created driver script for entire trial:")
+print(f"  script  = {dorun3A}")
 print(f"  outputs =")
-pprint.pprint(ofiles3)
+pprint.pprint(ofiles3A)
+
+# now try to make AND run an entire script
+trimanB.DoTrial(nupar3)
+print("[3][Test B] Created and ran entire trial")
 
 # end =========================================================================
