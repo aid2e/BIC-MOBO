@@ -1,10 +1,10 @@
 # =============================================================================
 ## @file   RunObjectives.py
 #  @author Derek Anderson
-#  @date   10.31.2025
+#  @date   11.24.2025
 # -----------------------------------------------------------------------------
-## @brief Python script to run objectives
-#    and return values.
+## @brief Simple wrapper for deploying the
+#    trial manager.
 # =============================================================================
 
 import argparse
@@ -13,10 +13,9 @@ import os
 import re
 import subprocess
 
-import EICMOBOTestTools as emt
+from EICMOBOTestTools as emt 
 
-#def RunObjectives(params, tag):
-def RunObjectives(**kwargs):
+def RunObjectives(tag = None, **kwargs):
     """RunObjectives
 
     Runs trial (simulation, reconstruction,
@@ -24,7 +23,8 @@ def RunObjectives(**kwargs):
     updated parameters.
 
     Args:
-      kwargs: any keyword arguments
+      tag:    tag associated with trial
+      kwargs: any keyword arguments (e.g. parameterization)
     Returns:
       dictionary of objectives and their values
     """
@@ -41,12 +41,13 @@ def RunObjectives(**kwargs):
     obj_path = main_path + "/../configuration/objectives.config"
 
     # create trial manager
-    trial = emt.TrialManager(run_path,
+    trial = emt.ObjectivesManager(run_path,
                              par_path,
-                             obj_path)
+                             obj_path,
+                             tag)
 
     # create and run script
-    oFiles = trial.DoTrial(kwargs)
+    oFiles = trial.DoObjectives(kwargs)
 
     # extract electron resolution
     #   -- TODO automate this
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     # parse keyword arguments
     #   -- TODO automate adding parameters to parser
     parser = argparse.ArgumentParser()
-    #parser.add_argument("--tag", "--tag", help = "Trial tag", type = str)
+    parser.add_argument("--tag", "--tag", help = "Trial tag", type = str, default = None)
     parser.add_argument("--enable_staves_2", "--enable_staves_2", help = "Stave 2 value", type = int)
     parser.add_argument("--enable_staves_3", "--enable_staves_3", help = "Stave 3 value", type = int)
     parser.add_argument("--enable_staves_4", "--enable_staves_4", help = "Stave 4 value", type = int)
@@ -87,7 +88,6 @@ if __name__ == "__main__":
     }
 
     # run objective
-    #RunObjectives(params, args.tag)
-    RunObjectives(**vars(params))
+    RunObjectives(args.tag, **params)
 
 # end ===========================================================================
