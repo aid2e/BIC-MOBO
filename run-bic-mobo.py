@@ -78,8 +78,6 @@ def main(*args, **kwargs):
     ax_objs = att.ConvertObjectConfig(cfg_obj)
 
     # define generation strategy to use
-    #   - FIXME allegedly bandit optimization
-    #     is better for this type of problem
     #   - TODO try bandit optimization
     gstrat = GenerationStrategy(
         steps = [
@@ -108,28 +106,30 @@ def main(*args, **kwargs):
         objectives = ax_objs
     )
 
+    # extract scheduler-specific options
+    cfg_sched = cfg_run["scheduler_opts"]
+
     # set up runners
-    #   -- TODO all of this should be configurable
     runner = None
     match args.runner:
         case "joblib":
             runner = JobLibRunner(
-                n_jobs = -1,
+                n_jobs = cfg_sched["n_jobs"],
                 config = {
                     'tmp_dir' : cfg_run["run_path"]
                 }
             )
         case "slurm":
             runner = SlurmRunner(
-                partition     = "ifarm",
-                time_limit    = "00:30:00",  # FIXME bump up when ready!
-                memory        = "8G",
-                cpus_per_task = 4,
+                partition     = cfg_sched["partition"],
+                time_limit    = cfg_sched["time_limit"],
+                memory        = cfg_sched["memory"],
+                cpus_per_task = cfg_sched["cpus_per_task"],
                 config        = {
                     'sbatch_options' : {
-                        'account'   : 'eic',
-                        'mail-user' : 'dereka@jlab.org',
-                        'mail-type' : 'END,FAIL',
+                        'account'   : cfg_sched["account"],
+                        'mail-user' : cfg_sched["mail-user"],
+                        'mail-type' : cfg_sched["mail-type"],
                         'output'    : cfg_run["log_path"],
                         'error'     : cfg_run["log_path"]
                     }
