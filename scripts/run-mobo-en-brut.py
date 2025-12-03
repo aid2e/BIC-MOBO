@@ -53,16 +53,14 @@ def main(*args, **kwargs):
     ]
 
     # parameterizations
-    #   - entry 0 = enable_staves_2
-    #     ...
-    #   - entry 4 = enable_staves_6
-    params = [
-        [1, 0, 0, 0, 0],
-        [1, 1, 0, 0, 0],
-        [1, 1, 1, 0, 0],
-        [1, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1]
-    ]
+    params = []
+    for stave2 in range(2):
+        for stave3 in range(2):
+            for stave4 in range(2):
+                for stave5 in range(2):
+                    for stave6 in range(2):
+                        param = [stave2, stave3, stave4, stave5, stave6]
+                        params.append(param)
 
     # extract path to script being run currently
     # and set runner paths
@@ -71,7 +69,7 @@ def main(*args, **kwargs):
         os.path.realpath(__file__)
     )
     run_path = main_path + "/configuration/run.config"
-    obj_run  = main_path + "/RunObjectives.py"
+    obj_run  = main_path + "/interfaces/RunObjectives.py"
 
     # load relevant config files
     cfg_run = emt.ReadJsonFile(run_path)

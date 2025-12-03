@@ -19,7 +19,7 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 - [x] Create simplified environment creation/deletion scripts
 - [x] Run optimization locally on BIC simulation using scheduler
       with one objective, energy resolution
-- [ ] Run workflow with one objective on hPC resources via
+- [x] Run workflow with one objective on hPC resources via
       SLURM using scheduler
 - [ ] Implement second objective, electron-pion separation
 - [ ] Run workflow with both objectives on HPC resources via
@@ -79,17 +79,17 @@ There are four configuration files which define the parameters of the problem.
 Before beginning, please make sure conda and/or mamba is installed. Once
 ready, the environment for the problem can be set up via:
 
-```
+```bash
 ./create-environment
 ```
 
 And activated via `conda`
-```
+```bash
 conda activate bic-mobo
 ```
 
 At any point, this environment can be deleted with
-```
+```bash
 ./remove-environment
 ```
 
@@ -99,7 +99,7 @@ scheduler appropriately if you're going to run with SLURM, PanDA, etc.
 
 Finally, install the local utilities/objectives by running
 the command below in this directory:
-```
+```bash
 pip install -e .
 ```
 
@@ -107,7 +107,7 @@ pip install -e .
 
 Before beginning, create a local installation of [the ePIC geometry
 description](https://github.com/eic/epic) and compile it:
-```
+```bash
 cd <where-the-geo-goes>
 git clone git@github.com:eic/epic.git
 cd epic
@@ -118,7 +118,7 @@ cmake --install build
 
 Then, modify `configurations/run.config` so that the paths point to your
 installations and relevent scripts, eg.
-```
+```json
 {
     "_comment"   : "Configures runtime options, and paths to EIC software components",
     "out_path"   : "<where-the-output-goes>",
@@ -148,7 +148,17 @@ installations and relevent scripts, eg.
         "EcalBarrelImagingClusters",
         "EcalBarrelImagingClusterAssociations",
         "EcalBarrelClusters"
-    ]
+    ],
+    "scheduler_opts" : {
+        "n_jobs"        : -1,
+        "partition"     : "<your-partition>",
+        "time_limit"    : "03:00:00",
+        "memory"        : "8G",
+        "cpus_per_task" : 4,
+        "account"       : "<your-account>",
+        "mail-user"     : "<your-email-address>",
+        "mail-type"     : "END,FAIL"
+    }
 }
 
 ```
@@ -162,7 +172,7 @@ And finally, modify `configurations/problem.config` and
 `configurations/objectives.config` to make sure the
 Ax output is placed in the appropriate directory and the code is
 picking up the correct objective scripts, eg.
-```
+```json
 {
     "_comment"     : "Configures problem for Ax",
     "name"         : "BIC Optimization",
@@ -171,7 +181,7 @@ picking up the correct objective scripts, eg.
 }
 ```
 
-```
+```json
 {
     "_comment"   : "Configure objectives to optimize for",
     "objectives" : {
@@ -187,14 +197,21 @@ picking up the correct objective scripts, eg.
 }
 ```
 
-Once appropriately configured, the optimization is run with:
-```
+Once appropriately configured, the optimizationc can be run locally
+with:
+```bash
 python run-bic-mobo.py
 ```
 
-Various analyses (in progress) can be run on the optimization
-output with the script `run-analyses.py`.  After updating the
-appropariate paths/options in the script, do:
+It can also be run via Slurm using the script `launch-mobo`, which
+dispatches a pilot job:
+```bash
+sbatch launch-mobo
 ```
+
+Various analyses can be run on the optimization output with the
+script `run-analyses.py`.  After updating the appropariate paths/options
+in the script, do:
+```bash
 python run-analyses.py
 ```
