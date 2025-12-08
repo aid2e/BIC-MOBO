@@ -47,7 +47,7 @@ def RunObjectives(tag = None, **kwargs):
                              tag)
 
     # create and run script
-    oFiles = trial.DoObjectives(kwargs)
+    oFiles = trial.DoTrial(kwargs)
 
     # extract electron resolution
     #   -- TODO automate this
