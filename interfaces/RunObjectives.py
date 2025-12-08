@@ -13,7 +13,7 @@ import os
 import re
 import subprocess
 
-from EICMOBOTestTools as emt 
+import EICMOBOTestTools as emt 
 
 def RunObjectives(tag = None, **kwargs):
     """RunObjectives
@@ -41,7 +41,7 @@ def RunObjectives(tag = None, **kwargs):
     obj_path = main_path + "/../configuration/objectives.config"
 
     # create trial manager
-    trial = emt.ObjectivesManager(run_path,
+    trial = emt.TrialManager(run_path,
                              par_path,
                              obj_path,
                              tag)
