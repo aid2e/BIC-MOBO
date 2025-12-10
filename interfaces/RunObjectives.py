@@ -49,19 +49,22 @@ def RunObjectives(tag = None, **kwargs):
     # create and run script
     oFiles = trial.DoTrial(kwargs)
 
-    # extract electron resolution
-    #   -- TODO automate this
-    oResEle = oFiles["ElectronEnergyResolution"].replace(".root", ".txt")
-    eResEle = None
-    with open(oResEle, 'r') as out:
-        outData = out.readlines()
-        eResEle = float(outData[0])
+    # extract relevant objectives
+    #   --> (should be 1st line in associated
+    #       text files)
+    objectives = dict()
+    for obj, file in oFiles.items():
+        oTxt = file.replace(".root", ".txt")
+        oVal = None
+        with open(oTxt, 'r') as out:
+            oDat = out.readlines()
+            oVal = float(oDat[0])
+        objectives[obj] = oVal
 
     # return dictionary of objectives
-    #   -- TODO and automate this
-    return {
-        "ElectronEnergyResolution" : eResEle
-    }
+    return objectives
+
+# main ========================================================================
 
 if __name__ == "__main__":
 
