@@ -201,7 +201,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-c",
-        "--output",
+        "--coordinate",
         help = "Coordinate to calculate resolution on",
         nargs = '?',
         const = CoordDefault,
@@ -222,6 +222,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # run analysis
-    CalculateReso(args.input, args.output, args.pdg)
+    CalculateAngReso(args.input, args.output, args.coordinate, args.pdg)
 
 # end =========================================================================

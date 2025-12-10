@@ -150,6 +150,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # run analysis
-    CalculateReso(args.input, args.output, args.pdg)
+    CalculateEneReso(args.input, args.output, args.pdg)
 
 # end =========================================================================
