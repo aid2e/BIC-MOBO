@@ -56,14 +56,16 @@ This repository is structured like so:
   | `create-environment` | script to create bic-mobo conda/mamba environment |
   | `remove-environment` | script to remove bic-mobo conda/mamba environment |
   | `run-bic-mobo.py` | wrapper script and point-of-entry to the problem |
+  | `launch-mobo` | script to launch a slurm pilot job |
   | `configurations` | collects various configuration files that define the problem |
   | `objectives` | collects analysis scripts to calculate objectives for optimize for |
-  | `steering` | collects steering files for running single particle simulations |
+  | `steering` | collects steering/macro files for running simulations |
+  | `interfaces` | collects code to interface the framework with objective scripts or other external code |
   | `examples` | collects of example config files, scripts, etc. for illustrating some of the extended functionality |
   | `scripts` | collects various scripts useful for running, testing, etc. |
   | `tests` | collects test scripts for unit tests |
-  | `EICMOBOTestTools` | a python module which consolidates various tools for interfacing with the EIC software stack |
-  | `AID2ETestTools` | a python module which consolidates various tools for interfacing with Ax |
+  | `EICMOBOTestTools` | a python package which consolidates various tools for interfacing with the EIC software stack |
+  | `AID2ETestTools` | a python package which consolidates various tools for interfacing with Ax |
 
 There are four configuration files which define the parameters of the problem.
 
@@ -122,7 +124,7 @@ installations and relevent scripts, eg.
 {
     "_comment"   : "Configures runtime options, and paths to EIC software components",
     "out_path"   : "<where-the-output-goes>",
-    "run_path"   : "<where-the-running-happens>,
+    "run_path"   : "<where-the-running-happens>",
     "log_path"   : "<where-the-logs-go>",
     "eic_shell"  : "<path-to-your-script>/eic-shell",
     "epic_setup" : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
@@ -174,10 +176,14 @@ Ax output is placed in the appropriate directory and the code is
 picking up the correct objective scripts, eg.
 ```json
 {
-    "_comment"     : "Configures problem for Ax",
-    "name"         : "BIC Optimization",
-    "problem_name" : "bic_mobo",
-    "OUTPUT_DIR"   : "<where-the-output-goes>"
+    "_comment"         : "Configures problem for Ax",
+    "name"             : "BIC Optimization",
+    "problem_name"     : "bic_mobo",
+    "OUTPUT_DIR"       : "<where-the-output-goes>"
+    "n_sobol"          : 2,
+    "min_sobol"        : 2,
+    "max_parallel_gen" : 2,
+    "n_max_trials"     : 5
 }
 ```
 
@@ -204,7 +210,8 @@ python run-bic-mobo.py
 ```
 
 It can also be run via Slurm using the script `launch-mobo`, which
-dispatches a pilot job:
+dispatches a pilot job.  Update the slurm options accordingly, and
+launch the job with:
 ```bash
 sbatch launch-mobo
 ```
