@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # =============================================================================
-## @file   BICEnergyResolution.py
+## @file   BICAngularResolution.py
 #  @author Derek Anderson
-#  @date   08.28.2025
+#  @date   12.09.2025
 # -----------------------------------------------------------------------------
-## @brief Script to compute energy resolution for a
-#    specified particle species
+## @brief Script to compute angular resolutions (in
+#    eta, phi) for a specified particle species
 #
 #  Usage if executed directly:
-#    ./BICEnergyResolution.py -i <input file> -o <output file> -p <pdg code>
+#    ./BICAngularResolution.py \
+#        -i <input file> \
+#        -o <output file> \
+#        -c <coordinate> \
+#        -p <pdg code>
 # =============================================================================
 
 import argparse as ap
@@ -21,31 +25,50 @@ from podio.reading import get_reader
 # default arguments
 IFileDefault = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
 OFileDefault = "test_reso.root"
+CoordDefault = "phi"
 PDGDefault   = 11
 
 
-def CalculateEneReso(
+def CalculateAngReso(
     ifile = IFileDefault,
     ofile = OFileDefault,
+    coord = CoordDefault,
     pdg   = PDGDefault
 ):
-    """CalculateEneReso
+    """CalculateAngReso
 
-    A function to calculate energy resolution for a 
+    A function to calculate angular resolution for a 
     specified species of particle.
 
     Args:
       ifile: input file name
       ofile: output file name
+      coord: coordinate to calculate resolution on
       pdg:   PDG code of particle species
     Returns:
       calculated resolution
     """
 
+    # sanitize coordinate input
+    coord = coord.lower()
+
     # set up histograms, etc. -------------------------------------------------
 
+    # set variable for axis accordingly 
+    var = "x"
+    match coord:
+        case "eta":
+            var = "#eta"
+        case "phi":
+            var = "#phi"
+        case _:
+            raise ValueError("Unknown coordinate specified!")
+
+    # construct axis title
+    axis = ";(" + var + "_{clust} - " + var + "_{par}) / " + var + "_{par}"
+
     # create histogram from extracting resolution
-    hres = ROOT.TH1D("hEneRes", ";(E_{clust} - E_{par}) / E_{par}", 50, -2., 3.)
+    hres = ROOT.TH1D("hAngRes", axis, 50, -2., 3.)
     hres.Sumw2()
 
     # event loop --------------------------------------------------------------
@@ -54,7 +77,7 @@ def CalculateEneReso(
     reader = get_reader(ifile)
     for iframe, frame in enumerate(reader.get("events")):
 
-        # grab truth-cluster associations from frame
+        # grab truth-cluster associations
         assocs = frame.get("EcalBarrelClusterAssociations")
 
         # now hunt down clusters associated with electron
@@ -65,23 +88,63 @@ def CalculateEneReso(
             if assoc.getSim().getPDG() != pdg:
                 continue
 
-            # calculate energy of truth particle
-            msim  = assoc.getSim().getMass()
-            pxsim = assoc.getSim().getMomentum().x
-            pysim = assoc.getSim().getMomentum().y
-            pzsim = assoc.getSim().getMomentum().z
-            psim2 = pxsim**2 + pysim**2 + pzsim**2
-            esim  = np.sqrt(psim2 + msim**2)
+            # calculate eta/phi of truth particle
+            # at the vertex
+            psim = ROOT.Math.XYZVector(
+                assoc.getSim().getMomentum().x,
+                assoc.getSim().getMomentum().y,
+                assoc.getSim().getMomentum().z
+            )
+            asim = np.nan
+            match coord:
+                case "eta":
+                    asim = psim.Eta()
+                case "phi":
+                    asim = psim.Phi()
+                case _:
+                    raise ValueError("Unknown coordinate specified!")
+
+            # if sim is _exactly_ 0 somehow, perturb it by epsilon
+            if asim == 0.0:
+                asim = asim + np.finfo(float).eps
+
+            # since these are single particle events, use the start vertex
+            # of the truth particle as the primary vertex
+            pvtx = assoc.getSim().getVertex()
+
+            # calculate the position of the cluster wrt to the
+            # primary vertex 
+            rvtx = ROOT.Math.XYZVector(
+                pvtx.x,
+                pvtx.y,
+                pvtx.z
+            )
+            rrec = ROOT.Math.XYZVector(
+                assoc.getRec().getPosition().x,
+                assoc.getRec().getPosition().y,
+                assoc.getRec().getPosition().z
+            )
+            drec = rrec - rvtx
+
+            # next calculate eta/phi of reconstructed cluster 
+            arec = np.nan
+            match coord:
+                case "eta":
+                    arec = drec.Eta()
+                case "phi":
+                    arec = drec.Phi()
+                case _:
+                    raise ValueError("Unknown coordinate specified!")
 
             # and now we should be looking at a cluster
             # connected to _the_ primary
-            eres = (assoc.getRec().getEnergy() - esim) / esim
-            hres.Fill(eres)
+            ares = (arec - asim) / asim
+            hres.Fill(ares)
 
     # resolution calculation --------------------------------------------------
 
     # fit spectrum with a gaussian to extract peak 
-    fres = ROOT.TF1("fEneRes", "gaus(0)", -0.5, 0.5)
+    fres = ROOT.TF1("fAngRes", "gaus(0)", -0.5, 0.5)
     fres.SetParameter(0, hres.Integral())
     fres.SetParameter(1, hres.GetMean())
     fres.SetParameter(2, hres.GetRMS())
@@ -91,8 +154,8 @@ def CalculateEneReso(
 
     # save objects
     with ROOT.TFile(ofile, "recreate") as out:
-        out.WriteObject(hres, "hEneRes")
-        out.WriteObject(fres, "fEneRes")
+        out.WriteObject(hres, "hAngRes")
+        out.WriteObject(fres, "fAngRes")
         out.Close()
 
     # grab objective and other info
@@ -137,6 +200,15 @@ if __name__ == "__main__":
         type = str
     )
     parser.add_argument(
+        "-c",
+        "--coordinate",
+        help = "Coordinate to calculate resolution on",
+        nargs = '?',
+        const = CoordDefault,
+        default = CoordDefault,
+        type = str
+    )
+    parser.add_argument(
         "-p",
         "--pdg",
         help = "PDG code to look for",
@@ -150,6 +222,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # run analysis
-    CalculateEneReso(args.input, args.output, args.pdg)
+    CalculateAngReso(args.input, args.output, args.coordinate, args.pdg)
 
 # end =========================================================================
