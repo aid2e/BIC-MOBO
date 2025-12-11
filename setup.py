@@ -12,7 +12,7 @@ import setuptools
 setuptools.setup(
     name     = 'bic-mobo',
     version  = '0.0.0',
-    packages = ['EICMOBOTestTools', 'AID2ETestTools', 'objectives']
+    packages = ['EICMOBOTestTools', 'AID2ETestTools', 'objectives', 'interfaces']
 )
 
 # end =========================================================================
