@@ -25,7 +25,9 @@ def ConvertParamConfig(config):
     Args:
       config: dictionary to convert
     Returns:
-      list of ax-compliant parameter definitions
+      a tuple containing:
+        a list of ax-compliant parameter definitions
+        a list of parameter constraints
     """
 
     # extract parameters & constraints
@@ -46,7 +48,7 @@ def ConvertParamConfig(config):
         if pType == "range": 
             lLimit = ast.literal_eval(inParVal["lower"])
             uLimit = ast.literal_eval(inParVal["upper"])
-            bounds = (lLimit, uLimit)
+            bounds = [lLimit, uLimit]
 
         # if needed, extract domain
         domain = None
@@ -54,7 +56,6 @@ def ConvertParamConfig(config):
             domain = ast.literal_eval(inParVal["domain"])
 
         # create output ax parameter
-        #   -- TODO add constraints
         outPar = dict()
         outPar["name"]       = name
         outPar["type"]       = pType
@@ -69,8 +70,14 @@ def ConvertParamConfig(config):
         # append parameter to list
         outPars.append(outPar)
 
+    # if any constraints are provided,
+    # pass them onto Ax
+    outCons = None
+    if inCons:
+        outCons = inCons
+
     # return list of parameters
-    return outPars
+    return (outPars, outCons)
 
 def CreateParamList(config):
     """CreateParamList
@@ -85,7 +92,9 @@ def CreateParamList(config):
     Args:
       config: dictionary to process
     Returns:
-      list of ax parameters
+      a tuple containing:
+        a string-representation of a list of ax parameters
+        a list of parameter constraints
     """
 
     # extract parameters & constraints
@@ -106,7 +115,7 @@ def CreateParamList(config):
         if pType == "range":
             lLimit = ast.literal_eval(inParVal["lower"])
             uLimit = ast.literal_eval(inParVal["upper"])
-            bounds = (lLimit, uLimit)
+            bounds = [lLimit, uLimit]
 
         # if needed, extract domain
         domain = None
@@ -119,7 +128,6 @@ def CreateParamList(config):
             ordered = ast.literal_eval(iParVal["is_ordered"])
 
         # create output ax parameter
-        #   -- TODO add constraints
         outPar = None
         if pType == "choice":
             outPar = ChoiceParameterConfig(
@@ -138,8 +146,14 @@ def CreateParamList(config):
         # append parameter to list
         outPars.append(outPar)
 
+    # if any constraints are provided,
+    # pass them onto Ax
+    outCons = None
+    if inCons:
+        outCons = inCons
+
     # return list of parameters
-    return outPars
+    return (outPars, outCons)
 
 def ConvertObjectConfig(config):
     """ConvertObjectConfig
@@ -154,28 +168,46 @@ def ConvertObjectConfig(config):
     Args:
       config: dictionary to convert
     Returns:
-      a dictionary of ax-compliant objectives
+      a tuple containing:
+        a dictionary of ax-compliant objectives
+        a list of constraints
     """
 
     # extract objectives
     inObjs = config["objectives"]
 
     # interate through them
-    outObjs  = dict()
+    outObjs     = dict()
+    constraints = list()
     for inObjKey, inObjVal in inObjs.items():
 
-        # extract relevant info
+        # extract name and minimize vs. maximize
         key  = inObjKey
         goal = inObjVal["goal"]
 
+        # if provided, extract threshold
+        ref = None
+        if "threshold" in inObjVal:
+            ref = inObjVal["threshold"]
+
+        # add contraint if provided
+        if "constraint" in inObjVal:
+            constraints.append(inObjVal["constraint"])
+
         # turn on/off minimization as appropriate
         if goal == "minimize":
-            outObjs[key] = ObjectiveProperties(minimize = True)
+            outObjs[key] = ObjectiveProperties(minimize = True, threshold = ref)
         else:
-            outObjs[key] = ObjectiveProperties(minimize = False)
+            outObjs[key] = ObjectiveProperties(minimize = False, threshold = ref)
+
+    # if any constraints were provided,
+    # pass them on to Ax
+    outCons = None
+    if constraints:
+        outCons = constraints
 
     # return dictionary of objectives
-    return outObjs
+    return (outObjs, outCons)
 
 def CreateObjectiveNames(config):
     """CreateObjectiveNames
@@ -189,19 +221,26 @@ def CreateObjectiveNames(config):
     Args:
       config: dictionary to process
     Returns:
-      a string defining a list of objective names
+      a tuple containing:
+        a string defining a list of objective names
+        a list of constraints
     """
 
     # extract objectives
     inObjs = config["objectives"]
 
     # interate through them
-    outNames = ""
+    outNames    = ""
+    constraints = list()
     for inObjKey, inObjVal in inObjs.items():
 
         # extract relevant info
         key  = inObjKey
         goal = inObjVal["goal"]
+
+        # add constraint if provided
+        if "constraint" in inObjVal:
+            constraints.append(inObjVal["constraints"])
 
         # turn on/off minimization as appropriate
         sKeyAndGoal = ""
@@ -215,7 +254,13 @@ def CreateObjectiveNames(config):
             outNames += ","
         outNames += sKeyAndGoal
 
+    # if any constraints were provided,
+    # pass them on to Ax
+    outCons = None
+    if constraints:
+        outCons = constraints
+
     # return string of names
-    return outNames
+    return (outNames, outCons)
 
 # end =========================================================================

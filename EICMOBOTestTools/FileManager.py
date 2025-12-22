@@ -55,16 +55,16 @@ def ConvertSteeringToTag(steer):
     tag = tag.replace(".", "_")
     return tag 
 
-def GetBody(label, steer, stage):
+def GetBody(stage, label = "", steer = ""):
     """GetBody
 
     Construct body (input, steering file, stage) of
     file/script name
 
     Args:
-      label:    the label associated with the input
-      steer:    the tag associated with the input steering file
-      stage:    the tag associated with the relevant stage of the trial
+      stage: the tag associated with the relevant stage of the trial
+      label: the label associated with the input
+      steer: the tag associated with the input steering file
     Returns:
       body of file/script name
     """
@@ -86,12 +86,14 @@ def GetSuffix(stage, analysis = ""):
       suffix relevant to stage
     """
     suffix = ""
-    if stage == "sim":
-        suffix = ".edm4hep"
+    if stage == "geo":
+        suffix = ".overlaps.txt"
+    elif stage == "sim":
+        suffix = ".edm4hep.root"
     elif stage == "rec":
-        suffix = ".edm4eic"
+        suffix = ".edm4eic.root"
     elif stage == "ana":
-        suffix = "_" + analysis
+        suffix = "_" + analysis + ".root"
     return suffix
 
 def MakeDir(path):
@@ -106,17 +108,17 @@ def MakeDir(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def MakeOutName(tag, label = "", steer = "", stage = "", analysis = "", prefix = ""):
+def MakeOutName(stage, tag, label = "", steer = "", analysis = "", prefix = ""):
     """MakeOutName
 
     Creates output file name for
     any stage of a trial.
 
     Args:
+      stage:    the tag associated with the relevant stage of the trial
       tag:      the tag associated with the current trial
       label:    the label associated with the input
       steer:    the tag associated with the input steering file
-      stage:    the tag associated with the relevant stage of the trial
       analysis: optional tag associated with the analysis being run
       prefix:   optional string to inject at start of file name
     Returns:
@@ -124,9 +126,9 @@ def MakeOutName(tag, label = "", steer = "", stage = "", analysis = "", prefix =
     """
 
     prefix = "aid2e_" if prefix == "" else "aid2e_" + prefix + "_"
-    body   = GetBody(label, steer, stage)
+    body   = GetBody(stage, label, steer)
     suffix = GetSuffix(stage, analysis)
-    name   = prefix + tag + body + suffix + ".root"
+    name   = prefix + tag + body + suffix
     return name 
 
 def MakeScriptName(tag, label = "", steer = "", stage = "", analysis = ""):
@@ -147,14 +149,14 @@ def MakeScriptName(tag, label = "", steer = "", stage = "", analysis = ""):
     body = GetBody(label, steer, stage)
     return "do_aid2e_" + tag + body + ".sh"
 
-def MakeSetCommands(setup, config):
-    """MakeSetCommands
+def MakeDetSetCommands(setup, config):
+    """MakeDetSetCommands
 
     Creates commands to set relevant
-    detector path and configuration"
+    detector path and configuration.
 
     Args:
-      setup:  path to geometry installation
+      setup:  path to geometry installation script
       config: name of new detector config
     Returns:
       tuple of commands to set new detector path and config
@@ -162,5 +164,18 @@ def MakeSetCommands(setup, config):
     setInsall = "source " + setup
     setConfig = "export DETECTOR_CONFIG=" + config
     return setInsall, setConfig
+
+def MakeRecSetCommands(setup):
+    """MakeRecSetCommands
+
+    Creates commands to set relevant
+    EICrecon path.
+
+    Args:
+      setup: path to eicrecon installation script
+    Returns:
+      command to be run
+    """
+    return "source " + setup
 
 # end =========================================================================
