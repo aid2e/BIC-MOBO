@@ -28,6 +28,47 @@ class SimGenerator:
         """
         self.cfgRun = ConfigParser.ReadJsonFile(run)
 
+    def MakeOverlapCheckCommand(self, tag):
+        """MakeOverlapCheckCommand
+
+        Generates command to run overlap check
+        and exit subprocess if an overlap is
+        found.
+
+        Args:
+          tag: tag associated with current trial
+        Returns:
+          command to be run
+        """
+
+        # make sure output directory
+        # exists for trial
+        outDir = self.cfgRun["out_path"] + "/" + tag
+        FileManager.MakeDir(outDir)
+
+        # command to do overlap check
+        log = outDir + "/" + FileManager.MakeOutName("geo", tag)
+        run = self.cfgRun["overlap_check"] + " -c $DETECTOR_PATH/$DETECTOR_CONFIG.xml > " + log + " 2>&1"
+
+        # command(s) to exit if there were any overlaps
+        checks = [
+          f'grep -F "Number of illegal overlaps/extrusions : " {log} | while IFS= read -r line; do',
+          '  lastChar="${line: -1}"',
+          '  if [[ $lastChar =~ ^[0-9]$ ]]; then',
+          '    if (( lastChar > 0 )); then',
+          '      exit 9',
+          '    fi',
+          '  fi',
+          'done'
+        ]
+        #check = "\n".join(line for line in checks) + "\n"
+        check = ""
+        for line in checks:
+            check += line + "\n"
+
+        # return full command
+        return run + "\n" + check
+
     def MakeCommand(self, tag, label, path, steer, inType): 
         """MakeCommand
 
@@ -40,14 +81,14 @@ class SimGenerator:
           label:  the label associated with the input
           path:   the path to the input steering file
           steer:  the input steering file
-          inType: the type of input (e.g. gun, hepmc, etc.)
+          inType: the type of input (e.g. gun, gps, hepmc, etc.)
         Returns:
           command to be run
         """
 
         # construct output name
         steeTag = FileManager.ConvertSteeringToTag(steer)
-        outFile = FileManager.MakeOutName(tag, label, steeTag, "sim")
+        outFile = FileManager.MakeOutName("sim", tag, label, steeTag)
 
         # make sure output directory
         # exists for trial
@@ -61,10 +102,18 @@ class SimGenerator:
         steerer = " --steeringFile " + path + "/" + steer
         output  = " --outputFile " + outDir + "/" + outFile
 
+        otherArgs= ""
+        for arg in self.cfgRun["sim_args"]:
+            otherArgs = otherArgs + " " + arg
+
         # construct most of command
-        command = self.cfgRun["sim_exec"] + compact + steerer
+        command = self.cfgRun["sim_exec"] + compact + steerer + otherArgs
         if inType == "gun":
             command = command + " -G "
+        elif inType == "gps":
+            macro   = " --macroFile " + path + "/" + steer.replace(".py", ".mac")
+            command = command + " --enableG4GPS "
+            command = command + macro
 
         # return command with output file attached
         command = command + output
@@ -98,16 +147,21 @@ class SimGenerator:
         simPath   = runDir + "/" + simScript
 
         # make commands to set detector config
-        setInstall, setConfig = FileManager.MakeSetCommands(
+        setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
             config
         )
 
+        # make command to check overlap
+        checkOverlap = self.MakeOverlapCheckCommand(tag)
+
         # compose script
         with open(simPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
-            script.write(setInstall + "\n")
-            script.write(setConfig + "\n\n")
+            script.write("set -e\n\n")
+            script.write(setDetInstall + "\n")
+            script.write(setDetConfig + "\n\n")
+            script.write(checkOverlap + "\n\n")
             script.write(command)
 
         # make sure script can be run

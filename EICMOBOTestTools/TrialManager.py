@@ -79,7 +79,7 @@ class TrialManager:
                 continue
             else:
                 self.geoEdit.EditCompact(cfg, value, self.tag)
-                trialConfig = self.geoEdit.EditConfig(cfg, self.tag)
+                self.geoEdit.EditRelatedFiles(cfg, self.tag)
 
         # return name of new config file
         return trialConfig
@@ -117,18 +117,28 @@ class TrialManager:
 
         # step 1: edit geometry files, set
         # reconstruction parameters
-        trialCfg = self.__DoGeometryEdits(params)
+        self.__DoGeometryEdits(params)
         self.__SetRecoArgs(params)
 
         # create commands to set detector path, config
-        cfgFile = FileManager.GetConfigFromPath(trialCfg)
-        setInstall, setConfig = FileManager.MakeSetCommands(
+        setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
-            cfgFile
+            self.cfgRun["det_config"]
         )
-        commands = [setInstall, setConfig]
+        commands = [setDetInstall, setDetConfig]
 
-        # TODO add overlap check here
+        # check for overlaps
+        commands.append(
+            self.simGen.MakeOverlapCheckCommand(self.tag)
+        )
+
+        # if an eicrecon installation is specified,
+        # make command to set that
+        if "eicrecon_setup" in self.cfgRun:
+            setRecInstall = FileManager.MakeRecSetCommands(
+                self.cfgRun["eicrecon_setup"]
+            )
+            commands.append(setRecInstall)
 
         # step 2: generate relevant simulation,
         # reconstruction commands
@@ -140,6 +150,12 @@ class TrialManager:
             inLoc  = inCfg["location"]
             inType = inCfg["type"]
             for inSteer in os.listdir(inLoc):
+
+                # only consider steering files
+                # (which end in .py)
+                isSteer = inSteer.endswith('.py')
+                if not isSteer:
+                    continue
 
                 # generate command to run simulation
                 commands.append(
@@ -162,8 +178,13 @@ class TrialManager:
                 )
 
             # step 3: generate relevant merging/analysis commands
-            doMerge, merged = self.anaGen.MakeMergeCommand(self.tag, inKey)
-            commands.append(doMerge)
+            #   -- FIXME it would be better to have some way to
+            #      1st identify what needs to be merged and then
+            #      only merge that
+            doSimMerge, simMerged = self.anaGen.MakeMergeCommand(self.tag, inKey, "sim")
+            doRecMerge, recMerged = self.anaGen.MakeMergeCommand(self.tag, inKey, "rec")
+            commands.append(doSimMerge)
+            commands.append(doRecMerge)
 
             # find objectives requiring current input
             for anaKey, anaCfg in self.cfgAna["objectives"].items():
@@ -181,7 +202,9 @@ class TrialManager:
                 command, outFile = self.anaGen.MakeCommand(self.tag,
                                                            inKey,
                                                            anaKey,
-                                                           merged)
+                                                           simMerged,
+                                                           recMerged)
+
                 # append analysis command and output file
                 # to appropriate lists/dictionaries
                 commands.append(command)
@@ -199,6 +222,7 @@ class TrialManager:
         # compose script
         with open(runPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
+            script.write("set -e\n\n")
             for command in commands:
                 script.write(command + "\n\n")
 
@@ -228,18 +252,23 @@ class TrialManager:
 
         # create and run script
         script, outFiles = self.MakeTrialScript(param)
-        subprocess.run([self.cfgRun["eic_shell"], "--", script])
+        process = subprocess.run([self.cfgRun["eic_shell"], "--", script])
 
-        # write out values of parameters to
-        # output file(s) for analysis later
+        # write out values of parameters for later
+        # analysis
+        #   --> if parameters generated overlap
+        #       (return code 9), punish with
+        #       objectives above or below
+        #       threshold
         for anaKey, anaOut in outFiles.items():
             anaPath = pathlib.Path(anaOut)
             anaTxt  = anaPath.with_suffix('.txt')
-            isFile  = os.path.isfile(anaTxt)
             with open(anaTxt, 'a+') as txt:
+                if process.returncode == 9:
+                    dum = self.anaGen.GetDummyValue(anaKey)
+                    txt.write(f"{dum}")
                 for parKey, parVal in param.items():
-                    if isFile:
-                        txt.write("\n")
+                    txt.write("\n")
                     txt.write(f"{parVal}")
 
         # return relevant output files

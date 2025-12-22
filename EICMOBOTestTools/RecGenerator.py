@@ -29,6 +29,23 @@ class RecGenerator:
         self.cfgRun = ConfigParser.ReadJsonFile(run)
         self.argParams = dict()
 
+    def __AddValueToArg(self, arg, value, units = ''):
+        """AddValueToArg
+
+        Adds a parameter's value and units to
+        an EICrecon argument.
+
+        Args:
+          arg:   the argument to add to
+          value: the value to add
+          units: the units to add
+        """
+        if units != '':
+            arg += "{}*{}".format(value, units)
+        else:
+            arg += "{}".format(value)
+        return arg
+
     # FIXME this is not thread-safe!
     def ClearArgs(self):
         """ClearArgs
@@ -43,8 +60,46 @@ class RecGenerator:
         Adds a parameter to dictionary
         of arguments to apply.
 
+        Args:
+            param: the parameter to add
+            value: the value it's going to take
+
         """
-        self.argParams.update({param["path"] : (param["units"], value)})
+
+        # grab info and current value
+        # of argument
+        path   = param["path"]
+        units  = param["units"]
+        argVal = ""
+        if path in self.argParams:
+            argVal = self.argParams[path]
+
+        # if dealing with a vector, then  will have to
+        # insert value in appropriate component
+        if param["is_vector"]:
+
+            # update length of vector if need be
+            index   = param["index"]
+            nCommas = argVal.count(',')
+            if index > nCommas:
+                for i in range(index - nCommas):
+                    argVal += ','
+
+            # and then insert value at appropriate index
+            if argVal.count(',') == 0:
+                argVal = self.__AddValueToArg(argVal, value, units)
+            else:
+                parts        = argVal.split(',')
+                parts[index] = self.__AddValueToArg(parts[index], value, units)
+                argVal       = ",".join(parts)
+
+        # otherwise dealing with a scalar, and
+        # can just add value to argument
+        else:
+            self.__AddValueToArg(argVal, value, units)
+
+        # save updated/new arg
+        self.argParams[path] = argVal
 
     def MakeCommand(self, tag, label, steer):
         """MakeCommand
@@ -63,8 +118,8 @@ class RecGenerator:
 
         # construct input/output names
         steeTag = FileManager.ConvertSteeringToTag(steer)
-        inFile  = FileManager.MakeOutName(tag, label, steeTag, "sim")
-        outFile = FileManager.MakeOutName(tag, label, steeTag, "rec")
+        inFile  = FileManager.MakeOutName("sim", tag, label, steeTag)
+        outFile = FileManager.MakeOutName("rec", tag, label, steeTag)
 
         # make sure output directory
         # exists for trial
@@ -87,12 +142,8 @@ class RecGenerator:
 
         # construct most of command
         command = self.cfgRun["rec_exec"] + " " + outArg + " " + collArg
-        for param, unitsAndValue in self.argParams.items():
-            units, value = unitsAndValue
-            if units != '': 
-                command = command + " -P" + param + "=\"{}*{}\"".format(value, units)
-            else:
-                command = command + " -P" + param + "=\"{}\"".format(value)
+        for param, value in self.argParams.items():
+            command = command + " -P" + param + "=\"" + value + "\""
 
         # return command with input file attached
         command = command + " " + outDir + "/" + inFile
@@ -125,16 +176,26 @@ class RecGenerator:
         recPath   = runDir + "/" + recScript
 
         # make commands to set detector config
-        setInstall, setConfig = FileManager.MakeSetCommands(
+        setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
             config
         )
 
+        # if an eicrecon installation is specified,
+        # make command to set that
+        setRecInstall = None
+        if "eicrecon_setup" in self.cfgRun:
+            setRecInstall = FileManager.MakeRecSetCommands(
+                self.cfgRun["eicrecon_setup"]
+            )
+
         # compose script
         with open(recPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
-            script.write(setInstall + "\n")
-            script.write(setConfig + "\n\n")
+            script.write(setDetInstall + "\n")
+            script.write(setDetConfig + "\n\n")
+            if setRecInstall:
+                script.write(setRecInstall + "\n\n")
             script.write(command)
 
         # make sure script can be run

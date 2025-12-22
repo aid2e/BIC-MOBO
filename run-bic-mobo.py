@@ -67,8 +67,8 @@ def main(*args, **kwargs):
 
     # translate parameter, objective options
     # into ax-compliant ones
-    ax_pars = att.ConvertParamConfig(cfg_par)
-    ax_objs = att.ConvertObjectConfig(cfg_obj)
+    ax_pars, ax_par_cons = att.ConvertParamConfig(cfg_par)
+    ax_objs, ax_obj_cons = att.ConvertObjectConfig(cfg_obj)
 
     # define generation strategy to use
     #   - TODO try bandit optimization
@@ -96,7 +96,8 @@ def main(*args, **kwargs):
     ax_client.create_experiment(
         name = cfg_exp["problem_name"],
         parameters = ax_pars,
-        objectives = ax_objs
+        objectives = ax_objs,
+        parameter_constraints = ax_par_cons
     )
 
     # extract scheduler-specific options
