@@ -56,10 +56,20 @@ def RunObjectives(tag = None, **kwargs):
     for obj, file in oFiles.items():
         oTxt = file.replace(".root", ".txt")
         oVal = None
-        with open(oTxt, 'r') as out:
-            oDat = out.readlines()
-            oVal = float(oDat[0])
-        objectives[obj] = oVal
+        if os.path.isfile(oTxt):
+            with open(oTxt, 'r') as out:
+                oDat = out.readlines()
+                oVal = float(oDat[0])
+            objectives[obj] = oVal
+
+    # if needed, calculate cost
+    cfg_obj = emt.ReadJsonFile(obj_path)
+    if "Cost" in cfg_obj["objectives"]:
+        cost = 1
+        for key, value in kwargs.items():
+            if "enable_staves_" in key:
+                cost += int(value)
+        objectives["Cost"] = cost
 
     # return dictionary of objectives
     return objectives
