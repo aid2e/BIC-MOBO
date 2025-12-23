@@ -8,6 +8,7 @@
 # =============================================================================
 
 from dataclasses import dataclass
+import argparse as ap
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -54,12 +55,12 @@ class Option:
 # set global options
 GlobalOpts = Option(
     True,
-    True,
+    False,
     "addAxPlots",
     "d12m11y2025",
-    "../out",
-    "AxTrial*/*.txt",
-    "AxTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
+    "../TestOutput_Step2_RunBrutProduction/out",
+    "Brutrial*/*.txt",
+    "BrutTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
     "../out/bic_mobo_exp_out.json",
     60
 )
@@ -527,22 +528,106 @@ def DoAxAnalyses(opts = GlobalOpts):
 
 if __name__ == "__main__":
 
-   # announce start
-   print("\n  Starting analyses!")
+    # set up arguments
+    parser = ap.ArgumentParser()
+    parser.add_argument(
+        "-r",
+        "--doRoot",
+        help = "turn on/off ROOT-based analyses",
+        nargs = '?',
+        const = GlobalOpts.doRoot,
+        default = GlobalOpts.doRoot,
+        type = bool
+    )
+    parser.add_argument(
+        "-a",
+        "--doAx",
+        help = "turn on/off Ax-based analyses",
+        nargs = '?',
+        const = GlobalOpts.doAx,
+        default = GlobalOpts.doAx,
+        type = bool
+    )
+    parser.add_argument(
+        "-b",
+        "--baseTag",
+        help = "prefix of analysis output files",
+        nargs = '?',
+        const = GlobalOpts.baseTag,
+        default = GlobalOpts.baseTag,
+        type = str
+    )
+    parser.add_argument(
+        "-d",
+        "--dateTag",
+        help = "tag indicating date/time in analysis output file",
+        nargs = '?',
+        const = GlobalOpts.dateTag,
+        default = GlobalOpts.dateTag,
+        type = str
+    )
+    parser.add_argument(
+        "-p",
+        "--outPath",
+        help = "path to MOBO output files",
+        nargs = '?',
+        const = GlobalOpts.outPath,
+        default = GlobalOpts.outPath,
+        type = str
+    )
+    parser.add_argument(
+        "-t",
+        "--outTxt",
+        help = "regex pattern to glob relevant MOBO output text files",
+        nargs = '?',
+        const = GlobalOpts.outTxt,
+        default = GlobalOpts.outTxt,
+        type = str
+    )
+    parser.add_argument(
+        "-o",
+        "--outRoot",
+        help = "regex pattern to glob relevant MOBO output root files",
+        nargs = '?',
+        const = GlobalOpts.outRoot,
+        default = GlobalOpts.outRoot,
+        type = str
+    )
+    parser.add_argument(
+        "-e",
+        "--outExp",
+        help = "saved Ax experiment to analyze",
+        nargs = '?',
+        const = GlobalOpts.outExp,
+        default = GlobalOpts.outExp,
+        type = str
+    )
+    parser.add_argument(
+        "-l",
+        "--palette",
+        help = "ROOT color palette to use",
+        nargs = '?',
+        const = GlobalOpts.palette,
+        default = GlobalOpts.palette,
+        type = int
+    )
 
-   # set options
-   opts = GlobalOpts
-   print(f"    Set options:")
-   print(f"      {opts}")
+    # announce start
+    print("\n  Starting analyses!")
 
-   # run analyses
-   DoBasicAnalyses(opts)
-   if opts.doRoot:
-       DoRootAnalyses(opts)
-   if opts.doAx:
-       DoAxAnalyses(opts)
+    # set options
+    opts = GlobalOpts
+    print(f"    Set options:")
+    print(f"      {opts}")
 
-   # announce end
-   print("  Analyses complete!\n")
+    # run analyses
+    DoBasicAnalyses(opts)
+    if opts.doRoot:
+        DoRootAnalyses(opts)
+    if opts.doAx:
+        DoAxAnalyses(opts)
+
+    # announce end
+    print("  Analyses complete!\n")
 
 # end =========================================================================
