@@ -103,8 +103,9 @@ class SimGenerator:
         output  = " --outputFile " + outDir + "/" + outFile
 
         otherArgs= ""
-        for arg in self.cfgRun["sim_args"]:
-            otherArgs = otherArgs + " " + arg
+        if "sim_args" in self.cfgRun:
+            for arg in self.cfgRun["sim_args"]:
+                otherArgs = otherArgs + " " + arg
 
         # construct most of command
         command = self.cfgRun["sim_exec"] + compact + steerer + otherArgs
