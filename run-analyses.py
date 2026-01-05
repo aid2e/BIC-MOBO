@@ -8,6 +8,7 @@
 # =============================================================================
 
 from dataclasses import dataclass
+import argparse as ap
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -26,42 +27,65 @@ from ax.analysis.plotly.plotly_analysis import PlotlyAnalysisCard
 class Option:
     """Option
 
-    Data class to
-    hold global opts
-    for script.
+    Data class to hold global opts
+    for analyses.
 
     Members:
-      doAx:    turn on/off Ax-based analyses
-      doRoot:  turn on/off ROOT-based analyses
-      baseTag: prefix of analysis output file
-      dateTag: tag indicating date/time in analysis output file
-      outPath: path to output files
-      outTxt:  regex pattern to glob relevant text output files
-      outRoot: regex patter to glob relevant ROOT output files
-      outExp:  saved Ax experiment to analyze
-      palette: ROOT color palette to use
+      doBasic:    turn on/off basic analysis
+      doAx:       turn on/off Ax-based analyses
+      doRoot:     turn on/off ROOT-based analyses
+      doEne:      process energy resolution output
+      doEta:      process eta resolution output
+      doPhi:      process phi resolution output
+      baseTag:    prefix of analysis output file
+      dateTag:    tag indicating date/time in analysis output file
+      outPath:    path to output files
+      outEneTxt:  regex pattern to glob relevant energy reso text output files
+      outEtaTxt:  regex pattern to glob relevant eta reso text output files
+      outPhiTxt:  regex pattern to glob relevant phi reso text output files
+      outEneRoot: regex pattern to glob relevant energy reso ROOT output files
+      outEtaRoot: regex pattern to glob relevant eta reso ROOT output files
+      outPhiRoot: regex pattern to glob relevant phi reso ROOT output files
+      outExp:     saved Ax experiment to analyze
+      palette:    ROOT color palette to use
     """
-    doRoot  : bool
-    doAx    : bool
-    baseTag : str
-    dateTag : str
-    outPath : str
-    outTxt  : str
-    outRoot : str
-    outExp  : str
-    palette : int
+    doBasic    : bool
+    doRoot     : bool
+    doAx       : bool
+    doEne      : bool
+    doEta      : bool
+    doPhi      : bool
+    baseTag    : str
+    dateTag    : str
+    outPath    : str
+    outEneTxt  : str
+    outEtaTxt  : str
+    outPhiTxt  : str
+    outEneRoot : str
+    outEtaRoot : str
+    outPhiRoot : str
+    outExp     : str
+    palette    : int
 
 # set global options
 GlobalOpts = Option(
-    True,
-    True,
-    "addAxPlots",
-    "d12m11y2025",
-    "../out",
-    "AxTrial*/*.txt",
-    "AxTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
-    "../out/bic_mobo_exp_out.json",
-    60
+    doBasic    = True,
+    doRoot     = True,
+    doAx       = False,
+    doEne      = True,
+    doEta      = True,
+    doPhi      = True,
+    baseTag    = "fullBrutProduction",
+    dateTag    = "d5m1y2025",
+    outPath    = "./TestOutput_Step2_RunBrutProduction",
+    outEneTxt  = "*EnergyReso*.txt",
+    outEtaTxt  = "*EtaReso*.txt",
+    outPhiTxt  = "*PhiReso*.txt",
+    outEneRoot = "*EnergyReso*.root",
+    outEtaRoot = "*EtaReso*.root",
+    outPhiRoot = "*PhiReso*.root",
+    outExp     = "../out/bic_mobo_exp_out.json",
+    palette    = 60
 )
 
 # -----------------------------------------------------------------------------
@@ -84,27 +108,36 @@ if GlobalOpts.doAx:
 # Basic analyses
 # -----------------------------------------------------------------------------
 
-def DoBasicAnalyses(opts = GlobalOpts):
+def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     """DoBasicAnalyses
 
     Runs a set of small analyses with
     pandas and matplotlib.
 
     Args:
-      opts: analysis options
+      ana:   index of ana being run
+      glob:  regex pattern to glob
+      label: label for output files
+      opts:  analysis options
     """
 
     # announce start of basic analyses
-    print("    Running basic analyses")
+    print(f"    Running basic analyses:")
+    print(f"        ana = {ana}, glob  = {glob}. label = {label}")
 
     # glob all trial output
     filePath = pathlib.Path(opts.outPath)
-    outFiles = sorted(filePath.glob(opts.outTxt))
+    outFiles = sorted(filePath.glob(glob))
 
     # announce what files are going to be processed
     print(f"      Located text output: {len(outFiles)} trials to analyze")
     for file in outFiles:
         print(f"        -- {file.name}")
+
+    # exit if no files found
+    if len(outFiles) == 0:
+        print(f"WARNING: no files found, exiting analysis!\n")
+        return
 
     # read in data ------------------------------------------------------------
 
@@ -171,6 +204,77 @@ def DoBasicAnalyses(opts = GlobalOpts):
     print(f"      Combined metrics and data:")
     print(outData.head())
 
+    # set titles/axes
+    trialPlotTitles  = list()
+    trialPlotTitlesX = list()
+    trialPlotTitlesY = list()
+    stavePlotTitles  = list()
+    stavePlotTitlesX = list()
+    stavePlotTitlesY = list()
+    match ana:
+
+        # energy resolution
+        case 0:
+
+            # reso vs. trial, nstave
+            trialPlotTitles.append(r'Single $e^{-}$ $\sigma_{E}$ vs. Trial Number')
+            trialPlotTitlesX.append("Trial")
+            trialPlotTitlesY.append(r'$\sigma_{E}$')
+            stavePlotTitles.append(r'Single $e^{-}$ $\sigma_{E}$ vs. $N_{\text{staves}}$')
+            stavePlotTitlesX.append(r'$N_{\text{staves}}$')
+            stavePlotTitlesY.append(r'$\sigma_{E}$')
+
+            # mean vs. trial, nstave
+            trialPlotTitles.append(r'Single $e^{-}$ $\mu_{\delta E}$ vs. Trial Number')
+            trialPlotTitlesX.append("Trial")
+            trialPlotTitlesY.append(r'$\mu_{\delta E} = \langle (E_{rec} - E_{par}) / E_{par} \rangle$')
+            stavePlotTitles.append(r'Single $e^{-}$ $\mu_{\delta E}$ vs. $N_{\text{staves}}$')
+            stavePlotTitlesX.append(r'$N_{\text{staves}}$')
+            stavePlotTitlesY.append(r'$\mu_{\delta E} = \langle (E_{rec} - E_{par}) / E_{par} \rangle$')
+
+        # eta resolution
+        case 1:
+
+            # reso vs. trial, nstave
+            trialPlotTitles.append(r'Single $e^{-}$ $\sigma_{\eta}$ vs. Trial Number')
+            trialPlotTitlesX.append("Trial")
+            trialPlotTitlesY.append(r'$\sigma_{\eta}$')
+            stavePlotTitles.append(r'Single $e^{-}$ $\sigma_{\eta}$ vs. $N_{\text{staves}}$')
+            stavePlotTitlesX.append(r'$N_{\text{staves}}$')
+            stavePlotTitlesY.append(r'$\sigma_{\eta}$')
+
+            # mean vs. trial, nstave
+            trialPlotTitles.append(r'Single $e^{-}$ $\mu_{\delta\eta}$ vs. Trial Number')
+            trialPlotTitlesX.append("Trial")
+            trialPlotTitlesY.append(r'$\mu_{\delta\eta} = \langle (\eta_{rec} - \eta_{par}) / \eta_{par} \rangle$')
+            stavePlotTitles.append(r'Single $e^{-}$ $\mu_{\delta\eta}$ vs. $N_{\text{staves}}$')
+            stavePlotTitlesX.append(r'$N_{\text{staves}}$')
+            stavePlotTitlesY.append(r'$\mu_{\delta\eta} = \langle (\eta_{rec} - \eta_{par}) / \eta_{par} \rangle$')
+
+        # phi resolution
+        case 2:
+
+            # reso vs. trial, nstave
+            trialPlotTitles.append(r'Single $e^{-}$ $\sigma_{\phi}$ vs. Trial Number')
+            trialPlotTitlesX.append("Trial")
+            trialPlotTitlesY.append(r'$\sigma_{\phi}$')
+            stavePlotTitles.append(r'Single $e^{-}$ $\sigma_{\phi}$ vs. $N_{\text{staves}}$')
+            stavePlotTitlesX.append(r'$N_{\text{staves}}$')
+            stavePlotTitlesY.append(r'$\sigma_{\phi}$')
+
+            # mean vs. trial, nstave
+            trialPlotTitles.append(r'Single $e^{-}$ $\mu_{\delta\phi}$ vs. Trial Number')
+            trialPlotTitlesX.append("Trial")
+            trialPlotTitlesY.append(r'$\mu_{\delta\phi} = \langle (\phi_{rec} - \phi_{par}) / \phi_{par} \rangle$')
+            stavePlotTitles.append(r'Single $e^{-}$ $\mu_{\delta\phi}$ vs. $N_{\text{staves}}$')
+            stavePlotTitlesX.append(r'$N_{\text{staves}}$')
+            stavePlotTitlesY.append(r'$\mu_{\delta\phi} = \langle (\phi_{rec} - \phi_{par}) / \phi_{par} \rangle$')
+
+    # last vs trial plot is the same regardless of objective
+    trialPlotTitles.append(r'$N_{\text{staves}}$ vs. Trial Number')
+    trialPlotTitlesX.append("Trial")
+    trialPlotTitlesY.append(r'$N_{\text{staves}}$')
+
     # create matplot plots ----------------------------------------------------
 
     # set plot style
@@ -206,9 +310,13 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "mediumblue",
         linewidth = 0.8
     )
-    trialPlots[0].set_title(r'$e^{-}$ Resolution vs. Trial Number')
-    trialPlots[0].set_xlabel("Trial")
-    trialPlots[0].set_ylabel(r'$e^{-}$ Resolution')
+    trialPlots[0].set_title(trialPlotTitles[0])
+    trialPlots[0].set_xlabel(trialPlotTitlesX[0])
+    trialPlots[0].set_ylabel(trialPlotTitlesY[0])
+    trialPlots[0].set_ylim(-0.007, 0.33)
+
+    # adjust range
+    #raxis = trialPlots[0].gca()
 
     # plot mean vs. trial in middle panel
     trialPlots[1].scatter(
@@ -231,9 +339,14 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "blueviolet",
         linewidth = 0.8
     )
-    trialPlots[1].set_title(r'$e^{-}$ Mean %-Diff vs. Trial Number')
-    trialPlots[1].set_xlabel("Trial")
-    trialPlots[1].set_ylabel(r'$e^{-}$ Mean %-Diff')
+    trialPlots[1].set_title(trialPlotTitles[1])
+    trialPlots[1].set_xlabel(trialPlotTitlesX[1])
+    trialPlots[1].set_ylabel(trialPlotTitlesY[1])
+    trialPlots[1].set_ylim(-0.33, 0.33)
+
+    # adjust range
+    #maxis = trialPlots[1].gca()
+    #maxis.set_ylim(-0.33, 0.33)
 
     # plot n active stave vs. trial in bottom panel
     trialPlots[2].scatter(
@@ -248,12 +361,12 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "indianred",
         linewidth = 0.8
     )
-    trialPlots[2].set_title(r'$N_{\text{staves}}$ vs. Trial Number')
-    trialPlots[2].set_xlabel("Trial")
-    trialPlots[2].set_ylabel(r'$N_{\text{staves}}$')
+    trialPlots[2].set_title(trialPlotTitles[2])
+    trialPlots[2].set_xlabel(trialPlotTitlesX[2])
+    trialPlots[2].set_ylabel(trialPlotTitlesY[2])
 
     # now create vs. trial figure name and save
-    trialName = opts.baseTag + ".vsTrialNum." + opts.dateTag + ".png"
+    trialName = opts.baseTag + "." + label + ".vsTrialNum." + opts.dateTag + ".png"
     plt.tight_layout()
     plt.savefig(trialName, dpi = 300, bbox_inches = "tight")
     plt.show()
@@ -276,9 +389,9 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "midnightblue",
         alpha = 0.5
     )
-    stavePlots[0].set_title(r'$e^{-}$ Resolution vs. $N_{\text{staves}}$')
-    stavePlots[0].set_xlabel(r'$N_{\text{staves}}$')
-    stavePlots[0].set_ylabel(r'$e^{-}$ Resolution')
+    stavePlots[0].set_title(stavePlotTitles[0])
+    stavePlots[0].set_xlabel(stavePlotTitlesX[0])
+    stavePlots[0].set_ylabel(stavePlotTitlesY[0])
 
     # plot mean vs. n active stave in bottom-right panel
     stavePlots[1].scatter(
@@ -287,12 +400,12 @@ def DoBasicAnalyses(opts = GlobalOpts):
         color = "indigo",
         alpha = 0.5
     )
-    stavePlots[1].set_title(r'$e^{-}$ Mean %-Diff vs. $N_{\text{staves}}$')
-    stavePlots[1].set_xlabel(r'$N_{\text{staves}}')
-    stavePlots[1].set_ylabel(r'$e^{-}$ Mean %-Diff')
+    stavePlots[1].set_title(stavePlotTitles[1])
+    stavePlots[1].set_xlabel(stavePlotTitlesX[1])
+    stavePlots[1].set_ylabel(stavePlotTitlesY[1])
 
     # now create vs. nstave figure name and save
-    staveName = opts.baseTag + ".vsNStave." + opts.dateTag + ".png"
+    staveName = opts.baseTag + "." + label + ".vsNStave." + opts.dateTag + ".png"
     plt.tight_layout()
     plt.savefig(staveName, dpi = 300, bbox_inches = "tight")
     plt.show()
@@ -302,14 +415,17 @@ def DoBasicAnalyses(opts = GlobalOpts):
 # ROOT analyses
 # -----------------------------------------------------------------------------
 
-def DoRootAnalyses(opts = GlobalOpts):
+def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     """DoRootAnalyses
 
     Runs a set of ROOT-
     based analyses.
 
     Args:
-      opts: analysis options
+      ana:   index of ana being run
+      glob:  regex pattern to glob
+      label: label for output files
+      opts:  analysis options
     """
 
     # announce start of ROOT analyses
@@ -317,26 +433,49 @@ def DoRootAnalyses(opts = GlobalOpts):
 
     # glob all trial output
     filePath = pathlib.Path(opts.outPath)
-    outFiles = sorted(filePath.glob(opts.outRoot))
+    outFiles = sorted(filePath.glob(glob))
     nTrials  = len(outFiles)
 
     # announce what files are going to be processed
-    print(f"      Located ROOT output: {len(outFiles)} trials to analyze")
+    print(f"      Located ROOT output: {nTrials} trials to analyze")
     for file in outFiles:
         print(f"        -- {file.name}")
+
+    # exit if no files found
+    if len(outFiles) == 0:
+        print(f"WARNING: no files found, exiting analysis!\n")
+        return
+
+    # set histogram titles
+    sResIntVsTrialU  = None
+    sResIntVsTrialN  = None
+    sResIntVsTrial2D = None
+    match ana:
+        case 0:
+            sResIntVsTrialU  = "Single e^{-} #mu_{#deltaE} vs. Trial Number (Unnormalized);#mu_{#deltaE} = #LT (E_{clust} - E_{par}) / E_{par} #RT; counts"
+            sResIntVsTrialN  = "Single e^{-} #mu_{#deltaE} vs. Trial Number (Normalized);#mu_{#deltaE} = #LT (E_{clust} - E_{par}) / E_{par} #RT; a.u."
+            sResIntVsTrial2D = "Single e^{-} #mu_{#deltaE} vs. Trial Number (Normalized);#mu_{#deltaE} = #LT (E_{clust} - E_{par}) / E_{par} #RT; trial"
+        case 1:
+            sResIntVsTrialU  = "Single e^{-} #mu_{#delta#eta} vs. Trial Number (Unnormalized);#mu_{#delta#eta} = #LT (#eta_{clust} - #eta_{par}) / #eta_{par} #RT; counts"
+            sResIntVsTrialN  = "Single e^{-} #mu_{#delta#eta} vs. Trial Number (Normalized);#mu_{#delta#eta} = #LT (#eta_{clust} - #eta_{par}) / #eta_{par} #RT; a.u."
+            sResIntVsTrial2D = "Single e^{-} #mu_{#delta#eta} vs. Trial Number (Normalized);#mu_{#delta#eta} = #LT (#eta_{clust} - #eta_{par}) / #eta_{par} #RT; trial"
+        case 2:
+            sResIntVsTrialU  = "Single e^{-} #mu_{#delta#phi} vs. Trial Number (Unnormalized);#mu_{#delta#phi} = #LT (#phi_{clust} - #phi_{par}) / #phi_{par} #RT; counts"
+            sResIntVsTrialN  = "Single e^{-} #mu_{#delta#phi} vs. Trial Number (Normalized);#mu_{#delta#phi} = #LT (#phi_{clust} - #phi_{par}) / #phi_{par} #RT; a.u."
+            sResIntVsTrial2D = "Single e^{-} #mu_{#delta#phi} vs. Trial Number (Normalized);#mu_{#delta#phi} = #LT (#phi_{clust} - #phi_{par}) / #phi_{par} #RT; trial"
 
     # create hists for resolution vs. trial
     hResIntVsTrialU = ROOT.THStack(
        "hResIntVsTrialU",
-       "e^{-} Energy %-Difference vs. Trial Number (Unnormalized);(E_{clust} - E_{par}) / E_{par}; counts"
+       sResIntVsTrialU
     )
     hResIntVsTrialN = ROOT.THStack(
        "hResIntVsTrialN",
-       "e^{-} Energy %-Difference vs. Trial Number (Normalized);(E_{clust} - E_{par}) / E_{par}; a.u."
+       sResIntVsTrialN
     )
     hResIntVsTrial2D = ROOT.TH2D(
-        "hEneResIntVsTrial2D",
-        "e^{-} Energy %-Difference vs. Trial Number (Normalized);(E_{clust} - E_{par}) / E_{par}; trial",
+        "hResIntVsTrial2D",
+        sResIntVsTrial2D,
         50,
         -2.,
         3.,
@@ -346,6 +485,20 @@ def DoRootAnalyses(opts = GlobalOpts):
     )
     print("      Reading in files:")
 
+    # set which histogram we're grabbing
+    iHist = None
+    iFunc = None
+    match ana:
+        case 0:
+            iHist = "hEneRes"
+            iFunc = "fEneRes"
+        case 1:
+            iHist = "hAngRes"
+            iFunc = "fAngRes"
+        case 2:
+            iHist = "hAngRes"
+            iFunc = "fAngRes"
+
     # grab relevant ROOT objects
     hists  = []
     iTrial = 0
@@ -353,7 +506,7 @@ def DoRootAnalyses(opts = GlobalOpts):
 
         # open input file and grab hists
         iFile   = ROOT.TFile(os.fspath(file.absolute()), "read")
-        hResInt = iFile.Get("hEneRes")
+        hResInt = iFile.Get(iHist)
         print(f"        -- [{iTrial}] hResInt: {hResInt}")
 
         # create updated names/titles
@@ -381,15 +534,15 @@ def DoRootAnalyses(opts = GlobalOpts):
         hResIntN.GetYaxis().CenterTitle(1)
 
         # turn off fit visualization
-        hResIntU.GetFunction("fEneRes").SetBit(ROOT.TF1.kNotDraw)
-        hResIntN.GetFunction("fEneRes").SetBit(ROOT.TF1.kNotDraw)
+        hResIntU.GetFunction(iFunc).SetBit(ROOT.TF1.kNotDraw)
+        hResIntN.GetFunction(iFunc).SetBit(ROOT.TF1.kNotDraw)
 
         # make histograms available outside of input file
         hResIntU.SetDirectory(0)
         hResIntN.SetDirectory(0)
 
         # normalize relevant histograms
-        fResIntN  = hResIntN.GetFunction("fEneRes")
+        fResIntN  = hResIntN.GetFunction(iFunc)
         intResInt = hResIntN.Integral()
         ampResInt = fResIntN.GetParameter(0)
         if intResInt > 0.0:
@@ -422,7 +575,7 @@ def DoRootAnalyses(opts = GlobalOpts):
     ROOT.gStyle.SetOptStat(0)
 
     # create unnormalized energy difference vs. trial
-    cResIntVsTrialU = ROOT.TCanvas("cEneResNoNorm", "", 950, 950)
+    cResIntVsTrialU = ROOT.TCanvas("cResNoNorm", "", 950, 950)
     cResIntVsTrialU.cd()
     cResIntVsTrialU.SetRightMargin(0.02)
     hResIntVsTrialU.Draw("pfc plc pmc nostack")
@@ -432,12 +585,12 @@ def DoRootAnalyses(opts = GlobalOpts):
     hResIntVsTrialU.GetYaxis().SetTitleOffset(1.2)
     cResIntVsTrialU.BuildLegend(0.7, 0.7, 0.9, 0.9, "", "pf")
 
-    canNameU = opts.baseTag + ".eleEneResNoNorm." + opts.dateTag + ".png"
+    canNameU = opts.baseTag + "." + label + ".resNoNormVsTrial1D." + opts.dateTag + ".png"
     cResIntVsTrialU.SaveAs(canNameU)
     print("      Created unnormalized energy integration resolution vs. trial plot")
 
     # create normalized energy difference vs. trial
-    cResIntVsTrialN = ROOT.TCanvas("cEneResNormed", "", 950, 950)
+    cResIntVsTrialN = ROOT.TCanvas("cResNormed", "", 950, 950)
     cResIntVsTrialN.cd()
     cResIntVsTrialN.SetRightMargin(0.02)
     hResIntVsTrialN.Draw("pfc plc pmc nostack")
@@ -447,29 +600,38 @@ def DoRootAnalyses(opts = GlobalOpts):
     hResIntVsTrialN.GetYaxis().SetTitleOffset(1.2)
     cResIntVsTrialN.BuildLegend(0.7, 0.7, 0.9, 0.9, "", "pf")
 
-    canNameN = opts.baseTag + ".eleEneResNormed." + opts.dateTag + ".png"
+    canNameN = opts.baseTag + "." + label + ".resNormVsTrial1D." + opts.dateTag + ".png"
     cResIntVsTrialN.SaveAs(canNameN)
     print("      Created normalized energy integration resolution vs. trial plot")
 
-    # create 2D normalized energy differnece vs. trial
-    cResIntVsTrial2D = ROOT.TCanvas("cEneResNormed2D", "", 950, 950)
-    cResIntVsTrial2D.cd()
+    # create 2D normalized energy differnece vs. trial (color)
+    cResIntVsTrial2DC = ROOT.TCanvas("cEneResNormed2DC", "", 950, 950)
+    cResIntVsTrial2DC.cd()
     hResIntVsTrial2D.Draw("colz")
     hResIntVsTrial2D.GetXaxis().CenterTitle(1)
     hResIntVsTrial2D.GetXaxis().SetTitleOffset(1.2)
     hResIntVsTrial2D.GetYaxis().CenterTitle(1)
     hResIntVsTrial2D.GetYaxis().SetTitleOffset(1.2)
 
-    canName2D = opts.baseTag + ".eleEneResNormed2D." + opts.dateTag + ".png"
-    cResIntVsTrial2D.SaveAs(canName2D)
+    canName2DC = opts.baseTag + "." + label + ".resNormed2D_col." + opts.dateTag + ".png"
+    cResIntVsTrial2DC.SaveAs(canName2DC)
+
+    # create 2D normalized energy differnece vs. trial (box)
+    cResIntVsTrial2DB = ROOT.TCanvas("cEneResNormed2DB", "", 950, 950)
+    cResIntVsTrial2DB.cd()
+    hResIntVsTrial2D.Draw("box")
+
+    canName2DB = opts.baseTag + "." + label + ".resNormed2D_box." + opts.dateTag + ".png"
+    cResIntVsTrial2DB.SaveAs(canName2DB)
     print("    Created 2D normalized energy integration resolution vs. trial plot")
 
     # save drawn output
-    rootName = opts.baseTag + ".rootOutput." + opts.dateTag + ".root"
+    rootName = opts.baseTag + "." + label + ".rootOutput." + opts.dateTag + ".root"
     with ROOT.TFile(rootName, "recreate") as f:
         cResIntVsTrialU.Write()
         cResIntVsTrialN.Write()
-        cResIntVsTrial2D.Write()
+        cResIntVsTrial2DC.Write()
+        cResIntVsTrial2DB.Write()
         hResIntVsTrial2D.Write()
         for hist in hists:
             hist.Write()
@@ -527,22 +689,208 @@ def DoAxAnalyses(opts = GlobalOpts):
 
 if __name__ == "__main__":
 
-   # announce start
-   print("\n  Starting analyses!")
+    # set up arguments
+    parser = ap.ArgumentParser()
+    parser.add_argument(
+        "--doBasic",
+        "--doBasic",
+        help = "turn on/off basic analysis",
+        nargs = '?',
+        const = GlobalOpts.doBasic,
+        default = GlobalOpts.doBasic,
+        type = bool
+    )
+    parser.add_argument(
+        "--doRoot",
+        "--doRoot",
+        help = "turn on/off ROOT-based analyses",
+        nargs = '?',
+        const = GlobalOpts.doRoot,
+        default = GlobalOpts.doRoot,
+        type = bool
+    )
+    parser.add_argument(
+        "--doAx",
+        "--doAx",
+        help = "turn on/off Ax-based analyses",
+        nargs = '?',
+        const = GlobalOpts.doAx,
+        default = GlobalOpts.doAx,
+        type = bool
+    )
+    parser.add_argument(
+        "--doEne",
+        "--doEne",
+        help = "process energy output",
+        nargs = '?',
+        const = GlobalOpts.doEne,
+        default = GlobalOpts.doEne,
+        type = bool
+    )
+    parser.add_argument(
+        "--doEta",
+        "--doEta",
+        help = "process eta output",
+        nargs = '?',
+        const = GlobalOpts.doEta,
+        default = GlobalOpts.doEta,
+        type = bool
+    )
+    parser.add_argument(
+        "--doPhi",
+        "--doPhi",
+        help = "process phi output",
+        nargs = '?',
+        const = GlobalOpts.doPhi,
+        default = GlobalOpts.doPhi,
+        type = bool
+    )
+    parser.add_argument(
+        "--baseTag",
+        "--baseTag",
+        help = "prefix of analysis output files",
+        nargs = '?',
+        const = GlobalOpts.baseTag,
+        default = GlobalOpts.baseTag,
+        type = str
+    )
+    parser.add_argument(
+        "--dateTag",
+        "--dateTag",
+        help = "tag indicating date/time in analysis output file",
+        nargs = '?',
+        const = GlobalOpts.dateTag,
+        default = GlobalOpts.dateTag,
+        type = str
+    )
+    parser.add_argument(
+        "--outPath",
+        "--outPath",
+        help = "path to MOBO output files",
+        nargs = '?',
+        const = GlobalOpts.outPath,
+        default = GlobalOpts.outPath,
+        type = str
+    )
+    parser.add_argument(
+        "--outEneTxt",
+        "--outEneTxt",
+        help = "regex pattern to glob relevant MOBO energy output text files",
+        nargs = '?',
+        const = GlobalOpts.outEneTxt,
+        default = GlobalOpts.outEneTxt,
+        type = str
+    )
+    parser.add_argument(
+        "--outEtaTxt",
+        "--outEtaTxt",
+        help = "regex pattern to glob relevant MOBO eta output text files",
+        nargs = '?',
+        const = GlobalOpts.outEtaTxt,
+        default = GlobalOpts.outEtaTxt,
+        type = str
+    )
+    parser.add_argument(
+        "--outPhiTxt",
+        "--outPhiTxt",
+        help = "regex pattern to glob relevant MOBO phi output text files",
+        nargs = '?',
+        const = GlobalOpts.outPhiTxt,
+        default = GlobalOpts.outPhiTxt,
+        type = str
+    )
+    parser.add_argument(
+        "--outEneRoot",
+        "--outEneRoot",
+        help = "regex pattern to glob relevant MOBO energy output root files",
+        nargs = '?',
+        const = GlobalOpts.outEneRoot,
+        default = GlobalOpts.outEneRoot,
+        type = str
+    )
+    parser.add_argument(
+        "--outEtaRoot",
+        "--outEtaRoot",
+        help = "regex pattern to glob relevant MOBO eta output root files",
+        nargs = '?',
+        const = GlobalOpts.outEtaRoot,
+        default = GlobalOpts.outEtaRoot,
+        type = str
+    )
+    parser.add_argument(
+        "--outPhiRoot",
+        "--outPhiRoot",
+        help = "regex pattern to glob relevant MOBO phi output root files",
+        nargs = '?',
+        const = GlobalOpts.outPhiRoot,
+        default = GlobalOpts.outPhiRoot,
+        type = str
+    )
+    parser.add_argument(
+        "--outExp",
+        "--outExp",
+        help = "saved Ax experiment to analyze",
+        nargs = '?',
+        const = GlobalOpts.outExp,
+        default = GlobalOpts.outExp,
+        type = str
+    )
+    parser.add_argument(
+        "--palette",
+        "--palette",
+        help = "ROOT color palette to use",
+        nargs = '?',
+        const = GlobalOpts.palette,
+        default = GlobalOpts.palette,
+        type = int
+    )
+    args = parser.parse_args()
 
-   # set options
-   opts = GlobalOpts
-   print(f"    Set options:")
-   print(f"      {opts}")
+    # announce start
+    print("\n  Starting analyses!")
 
-   # run analyses
-   DoBasicAnalyses(opts)
-   if opts.doRoot:
-       DoRootAnalyses(opts)
-   if opts.doAx:
-       DoAxAnalyses(opts)
+    # set options
+    opts = Option(
+        doBasic    = args.doBasic,
+        doRoot     = args.doRoot,
+        doAx       = args.doAx,
+        doEne      = args.doEne,
+        doEta      = args.doEta,
+        doPhi      = args.doPhi,
+        baseTag    = args.baseTag,
+        dateTag    = args.dateTag,
+        outPath    = args.outPath,
+        outEneTxt  = args.outEneTxt,
+        outEtaTxt  = args.outEtaTxt,
+        outPhiTxt  = args.outPhiTxt,
+        outEneRoot = args.outEneRoot,
+        outEtaRoot = args.outEtaRoot,
+        outPhiRoot = args.outPhiRoot,
+        outExp     = args.outExp,
+        palette    = args.palette
+    )
+    print(f"    Set options:")
+    print(f"      {opts}")
 
-   # announce end
-   print("  Analyses complete!\n")
+    # run analyses
+    if opts.doBasic:
+        if opts.doEne:
+            DoBasicAnalyses(0, opts.outEneTxt, "ene", opts)
+        if opts.doEta:
+            DoBasicAnalyses(1, opts.outEtaTxt, "eta", opts)
+        if opts.doPhi:
+            DoBasicAnalyses(2, opts.outPhiTxt, "phi", opts)
+    if opts.doRoot:
+        if opts.doEne:
+            DoRootAnalyses(0, opts.outEneRoot, "ene", opts)
+        if opts.doEta:
+            DoRootAnalyses(1, opts.outEtaRoot, "eta", opts)
+        if opts.doPhi:
+            DoRootAnalyses(2, opts.outPhiRoot, "phi", opts)
+    if opts.doAx:
+        DoAxAnalyses(opts)
+
+    # announce end
+    print("  Analyses complete!\n")
 
 # end =========================================================================
