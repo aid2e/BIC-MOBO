@@ -58,9 +58,9 @@ GlobalOpts = Option(
     False,
     "addAxPlots",
     "d12m11y2025",
-    "../TestOutput_Step2_RunBrutProduction/out",
-    "Brutrial*/*.txt",
-    "BrutTrial*/*_ana_single_electron_ElectronEnergyResolution.root",
+    "./TestOutput_Step2_RunBrutProduction",
+    "*.txt",
+    "*_ana_single_electron_ElectronEnergyResolution.root",
     "../out/bic_mobo_exp_out.json",
     60
 )
@@ -611,12 +611,23 @@ if __name__ == "__main__":
         default = GlobalOpts.palette,
         type = int
     )
+    args = parser.parse_args()
 
     # announce start
     print("\n  Starting analyses!")
 
     # set options
-    opts = GlobalOpts
+    opts = Option(
+        doRoot  = args.doRoot,
+        doAx    = args.doAx,
+        baseTag = args.baseTag,
+        dateTag = args.dateTag,
+        outPath = args.outPath,
+        outTxt  = args.outTxt,
+        outRoot = args.outRoot,
+        outExp  = args.outExp,
+        palette = args.palette
+    )
     print(f"    Set options:")
     print(f"      {opts}")
 
