@@ -45,6 +45,7 @@ def main(*args, **kwargs):
     # set up arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-r", "--runner", help = "Runner type", nargs = '?', const = 1, type = str, default = "joblib")
+    parser.add_argument("-x", "--experiment", help = "JSON-serialized Ax experiment to load", nargs = '?', const = 1, type = str, default = None)
 
     # grab arguments
     args = parser.parse_args()    
@@ -88,17 +89,21 @@ def main(*args, **kwargs):
         ]
     )
 
-    # create ax client
-    ax_client = AxClient(
-        generation_strategy = gstrat,
-        enforce_sequential_optimization = False
-    )
-    ax_client.create_experiment(
-        name = cfg_exp["problem_name"],
-        parameters = ax_pars,
-        objectives = ax_objs,
-        parameter_constraints = ax_par_cons
-    )
+    # either create or load ax experiment as needed
+    ax_client = None
+    if args.experiment == None:
+        ax_client = AxClient(
+            generation_strategy = gstrat,
+            enforce_sequential_optimization = False
+        )
+        ax_client.create_experiment(
+            name = cfg_exp["problem_name"],
+            parameters = ax_pars,
+            objectives = ax_objs,
+            parameter_constraints = ax_par_cons
+        )
+    else:
+        ax_client = AxClient().load_from_json_file(args.experiment)
 
     # extract scheduler-specific options
     cfg_sched = cfg_run["scheduler_opts"]
