@@ -35,8 +35,8 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
     2. Able to be easily factorized and deployed in other problems,
     3. Able to handle modifying reconstruction parameters (stretch
        goal);
-    4. And can be evolved to align with ongoing work in the [holistic
-       optimization](https://github.com/aid2e/HolisticOptimization) example;
+    4. And can be evolved to align with ongoing work in the [holistic optimization](https://github.com/aid2e/HolisticOptimization)
+       example;
 
 ## Dependencies
 
@@ -64,6 +64,7 @@ This repository is structured like so:
   | `examples` | collects of example config files, scripts, etc. for illustrating some of the extended functionality |
   | `scripts` | collects various scripts useful for running, testing, etc. |
   | `tests` | collects test scripts for unit tests |
+  | `bin` | collects scripts to set environment variables, etc. |
   | `EICMOBOTestTools` | a python package which consolidates various tools for interfacing with the EIC software stack |
   | `AID2ETestTools` | a python package which consolidates various tools for interfacing with Ax |
 
@@ -99,11 +100,14 @@ Then, install the [AID2E scheduler](https://github.com/aid2e/scheduler_epic)
 following the instructions in its repository. Remember to configure the
 scheduler appropriately if you're going to run with SLURM, PanDA, etc.
 
-Finally, install the local utilities/objectives by running
+Istall the local utilities/objectives by running
 the command below in this directory:
 ```bash
 pip install -e .
 ```
+
+Lastly, you'll need to make sure the `eic-shell` is available on your
+machine.  You can find instructions to do so [here](https://eic.github.io/tutorial-setting-up-environment/).
 
 ## Running the framework
 
@@ -122,16 +126,18 @@ Then, modify `configurations/run.config` so that the paths point to your
 installations and relevent scripts, eg.
 ```json
 {
-    "_comment"   : "Configures runtime options, and paths to EIC software components",
-    "out_path"   : "<where-the-output-goes>",
-    "run_path"   : "<where-the-running-happens>",
-    "log_path"   : "<where-the-logs-go>",
-    "eic_shell"  : "<path-to-your-script>/eic-shell",
-    "epic_setup" : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
-    "det_path"   : "<where-the-geo-goes>/epic/install/share/epic",
-    "det_config" : "epic",
-    "sim_exec"   : "npsim",
-    "sim_input"  : {
+    "_comment"      : "Configures runtime options, and paths to EIC software components",
+    "conda"         : "<path-to-your-script>/conda.sh",
+    "out_path"      : "<where-the-output-goes>",
+    "run_path"      : "<where-the-running-happens>",
+    "log_path"      : "<where-the-logs-go>",
+    "eic_shell"     : "<path-to-your-script>/eic-shell",
+    "epic_setup"    : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
+    "overlap_check" : "checkOverlaps",
+    "det_path"      : "<where-the-geo-goes>/epic/install/share/epic",
+    "det_config"    : "epic",
+    "sim_exec"      : "npsim",
+    "sim_input"     : {
         "location" : "<where-the-mobo-goes>/BIC-MOBO/steering",
         "type"     : "gun"
     },
@@ -150,17 +156,7 @@ installations and relevent scripts, eg.
         "EcalBarrelImagingClusters",
         "EcalBarrelImagingClusterAssociations",
         "EcalBarrelClusters"
-    ],
-    "scheduler_opts" : {
-        "n_jobs"        : -1,
-        "partition"     : "<your-partition>",
-        "time_limit"    : "03:00:00",
-        "memory"        : "8G",
-        "cpus_per_task" : 4,
-        "account"       : "<your-account>",
-        "mail-user"     : "<your-email-address>",
-        "mail-type"     : "END,FAIL"
-    }
+    ]
 }
 
 ```
@@ -180,10 +176,10 @@ picking up the correct objective scripts, eg.
     "name"             : "BIC Optimization",
     "problem_name"     : "bic_mobo",
     "OUTPUT_DIR"       : "<where-the-output-goes>"
-    "n_sobol"          : 2,
-    "min_sobol"        : 2,
-    "max_parallel_gen" : 2,
-    "n_max_trials"     : 5
+    "n_sobol"          : 10,
+    "min_sobol"        : 6,
+    "max_parallel_gen" : 6,
+    "n_max_trials"     : 42
 }
 ```
 
@@ -195,7 +191,7 @@ picking up the correct objective scripts, eg.
             "input" : "single_electron",
             "path"  : "<where-the-mobo-goes>/BIC-MOBO/objectives",
             "exec"  : "BICEnergyResolution.py",
-            "rule"  : "python <EXEC> -i <INPUT> -o <OUTPUT> -p 11",
+            "rule"  : "python <EXEC> -i <RECO> -o <OUTPUT> -p 11",
             "stage" : "ana",
             "goal"  : "minimize"
         }
@@ -203,15 +199,23 @@ picking up the correct objective scripts, eg.
 }
 ```
 
-Once appropriately configured, the optimizationc can be run locally
-with:
+Once appropriately configured, we need to set an environemnt variable
+to point to our installation via:
+```bash
+source bin/this-mobo.sh
+
+```
+Where `bin/this-mobo.sh` should be replaced by the script for your
+shell.  Note that this should only need to be done once per session.
+
+Finally, the optimization can be run locally with:
 ```bash
 python run-bic-mobo.py
 ```
 
-It can also be run via Slurm using the script `launch-mobo`, which
-dispatches a pilot job.  Update the slurm options accordingly, and
-launch the job with:
+Or it can be run via Slurm using the script `launch-mobo`, which
+dispatches a pilot job.  Update the slurm options in `configuration/
+template.slurm` accordingly, and launch the job with:
 ```bash
 sbatch launch-mobo
 ```
