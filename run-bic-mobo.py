@@ -116,7 +116,7 @@ def main(*args, **kwargs):
                 slurm_template = f"{mobo_path}/configuration/template.slurm",
                 init_env = [
                     f"source {mobo_path}/bin/this-mobo.tcsh",
-                    "source /home/dereka/.miniforge3/etc/profile.d/conda.sh",
+                    f"source {cfg_run['conda']}",
                     "conda activate bic-mobo",
                     "conda list"
                 ]

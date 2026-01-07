@@ -35,8 +35,8 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
     2. Able to be easily factorized and deployed in other problems,
     3. Able to handle modifying reconstruction parameters (stretch
        goal);
-    4. And can be evolved to align with ongoing work in the [holistic
-       optimization](https://github.com/aid2e/HolisticOptimization) example;
+    4. And can be evolved to align with ongoing work in the [holistic optimization](https://github.com/aid2e/HolisticOptimization)
+       example;
 
 ## Dependencies
 
@@ -126,16 +126,18 @@ Then, modify `configurations/run.config` so that the paths point to your
 installations and relevent scripts, eg.
 ```json
 {
-    "_comment"   : "Configures runtime options, and paths to EIC software components",
-    "out_path"   : "<where-the-output-goes>",
-    "run_path"   : "<where-the-running-happens>",
-    "log_path"   : "<where-the-logs-go>",
-    "eic_shell"  : "<path-to-your-script>/eic-shell",
-    "epic_setup" : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
-    "det_path"   : "<where-the-geo-goes>/epic/install/share/epic",
-    "det_config" : "epic",
-    "sim_exec"   : "npsim",
-    "sim_input"  : {
+    "_comment"      : "Configures runtime options, and paths to EIC software components",
+    "conda"         : "<path-to-your-script>/conda.sh",
+    "out_path"      : "<where-the-output-goes>",
+    "run_path"      : "<where-the-running-happens>",
+    "log_path"      : "<where-the-logs-go>",
+    "eic_shell"     : "<path-to-your-script>/eic-shell",
+    "epic_setup"    : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
+    "overlap_check" : "checkOverlaps",
+    "det_path"      : "<where-the-geo-goes>/epic/install/share/epic",
+    "det_config"    : "epic",
+    "sim_exec"      : "npsim",
+    "sim_input"     : {
         "location" : "<where-the-mobo-goes>/BIC-MOBO/steering",
         "type"     : "gun"
     },
@@ -154,17 +156,7 @@ installations and relevent scripts, eg.
         "EcalBarrelImagingClusters",
         "EcalBarrelImagingClusterAssociations",
         "EcalBarrelClusters"
-    ],
-    "scheduler_opts" : {
-        "n_jobs"        : -1,
-        "partition"     : "<your-partition>",
-        "time_limit"    : "03:00:00",
-        "memory"        : "8G",
-        "cpus_per_task" : 4,
-        "account"       : "<your-account>",
-        "mail-user"     : "<your-email-address>",
-        "mail-type"     : "END,FAIL"
-    }
+    ]
 }
 
 ```
@@ -222,8 +214,8 @@ python run-bic-mobo.py
 ```
 
 Or it can be run via Slurm using the script `launch-mobo`, which
-dispatches a pilot job.  Update the slurm options accordingly, and
-launch the job with:
+dispatches a pilot job.  Update the slurm options in `configuration/
+template.slurm` accordingly, and launch the job with:
 ```bash
 sbatch launch-mobo
 ```
