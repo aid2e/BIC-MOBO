@@ -103,15 +103,12 @@ def main(*args, **kwargs):
     else:
         ax_client = AxClient().load_from_json_file(args.experiment)
 
-    # extract scheduler-specific options
-    cfg_sched = cfg_run["scheduler_opts"]
-
     # set up runners
     runner = None
     match args.runner:
         case "joblib":
             runner = JobLibRunner(
-                n_jobs = cfg_sched["n_jobs"],
+                n_jobs = cfg_run["sched_n_jobs"],
                 config = {
                     'tmp_dir' : cfg_run["run_path"]
                 }
