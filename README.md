@@ -106,6 +106,9 @@ the command below in this directory:
 pip install -e .
 ```
 
+Lastly, you'll need to make sure the `eic-shell` is available on your
+machine.  You can find instructions to do so [here](https://eic.github.io/tutorial-setting-up-environment/).
+
 ## Running the framework
 
 Before beginning, create a local installation of [the ePIC geometry
@@ -181,10 +184,10 @@ picking up the correct objective scripts, eg.
     "name"             : "BIC Optimization",
     "problem_name"     : "bic_mobo",
     "OUTPUT_DIR"       : "<where-the-output-goes>"
-    "n_sobol"          : 2,
-    "min_sobol"        : 2,
-    "max_parallel_gen" : 2,
-    "n_max_trials"     : 5
+    "n_sobol"          : 10,
+    "min_sobol"        : 6,
+    "max_parallel_gen" : 6,
+    "n_max_trials"     : 42
 }
 ```
 
@@ -196,7 +199,7 @@ picking up the correct objective scripts, eg.
             "input" : "single_electron",
             "path"  : "<where-the-mobo-goes>/BIC-MOBO/objectives",
             "exec"  : "BICEnergyResolution.py",
-            "rule"  : "python <EXEC> -i <INPUT> -o <OUTPUT> -p 11",
+            "rule"  : "python <EXEC> -i <RECO> -o <OUTPUT> -p 11",
             "stage" : "ana",
             "goal"  : "minimize"
         }
