@@ -100,7 +100,7 @@ Then, install the [AID2E scheduler](https://github.com/aid2e/scheduler_epic)
 following the instructions in its repository. Remember to configure the
 scheduler appropriately if you're going to run with SLURM, PanDA, etc.
 
-Finally, install the local utilities/objectives by running
+Istall the local utilities/objectives by running
 the command below in this directory:
 ```bash
 pip install -e .
