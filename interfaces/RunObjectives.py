@@ -33,7 +33,6 @@ def RunObjectives(tag = None, **kwargs):
     # grab path to problem installation so we
     # can locate the config files
     mobo_path = os.getenv('BIC_MOBO')
-    print(f"CHECK --> path = {mobo_path}")
     run_path  = mobo_path + "/configuration/run.config"
     par_path  = mobo_path + "/configuration/parameters.config"
     obj_path  = mobo_path + "/configuration/objectives.config"
