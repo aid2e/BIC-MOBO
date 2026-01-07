@@ -35,7 +35,7 @@ def main(*args, **kwargs):
     with the -r option:
 
       joblib -- use joblib runner (default)
-      slurm  -- use slurm runner (in progress)
+      slurm  -- use slurm runner
       panda  -- use panda runner (TODO)
 
     Args:
@@ -49,15 +49,13 @@ def main(*args, **kwargs):
     # grab arguments
     args = parser.parse_args()    
 
-    # extract path to script being run currently
-    #   - FIXME this should get automated!
-    main_path, main_file = emt.SplitPathAndFile(
-        os.path.realpath(__file__)
-    )
-    run_path = main_path + "/configuration/run.config"
-    exp_path = main_path + "/configuration/problem.config"
-    par_path = main_path + "/configuration/parameters.config"
-    obj_path = main_path + "/configuration/objectives.config"
+    # grab paths to problem installation and
+    # configuration files
+    mobo_path = os.getenv('BIC_MOBO')
+    run_path  = mobo_path + "/configuration/run.config"
+    exp_path  = mobo_path + "/configuration/problem.config"
+    par_path  = mobo_path + "/configuration/parameters.config"
+    obj_path  = mobo_path + "/configuration/objectives.config"
 
     # load relevant config files
     cfg_run = emt.ReadJsonFile(run_path)
@@ -115,19 +113,13 @@ def main(*args, **kwargs):
             )
         case "slurm":
             runner = SlurmRunner(
-                partition     = cfg_sched["partition"],
-                time_limit    = cfg_sched["time_limit"],
-                memory        = cfg_sched["memory"],
-                cpus_per_task = cfg_sched["cpus_per_task"],
-                config        = {
-                    'sbatch_options' : {
-                        'account'   : cfg_sched["account"],
-                        'mail-user' : cfg_sched["mail-user"],
-                        'mail-type' : cfg_sched["mail-type"],
-                        'output'    : cfg_run["log_path"],
-                        'error'     : cfg_run["log_path"]
-                    }
-                }
+                slurm_template = f"{mobo_path}/configuration/template.slurm",
+                init_env = [
+                    f"source {mobo_path}/bin/this-mobo.tcsh",
+                    f"source {cfg_run['conda']}",
+                    "conda activate bic-mobo",
+                    "conda list"
+                ]
             )
         case _:
             raise ValueError("Unknown runner specified!")
