@@ -64,6 +64,7 @@ This repository is structured like so:
   | `examples` | collects of example config files, scripts, etc. for illustrating some of the extended functionality |
   | `scripts` | collects various scripts useful for running, testing, etc. |
   | `tests` | collects test scripts for unit tests |
+  | `bin` | collects scripts to set environment variables, etc. |
   | `EICMOBOTestTools` | a python package which consolidates various tools for interfacing with the EIC software stack |
   | `AID2ETestTools` | a python package which consolidates various tools for interfacing with Ax |
 
@@ -203,13 +204,21 @@ picking up the correct objective scripts, eg.
 }
 ```
 
-Once appropriately configured, the optimizationc can be run locally
-with:
+Once appropriately configured, we need to set an environemnt variable
+to point to our installation via:
+```bash
+source bin/this-mobo.sh
+
+```
+Where `bin/this-mobo.sh` should be replaced by the script for your
+shell.  Note that this should only need to be done once per session.
+
+Finally, the optimization can be run locally with:
 ```bash
 python run-bic-mobo.py
 ```
 
-It can also be run via Slurm using the script `launch-mobo`, which
+Or it can be run via Slurm using the script `launch-mobo`, which
 dispatches a pilot job.  Update the slurm options accordingly, and
 launch the job with:
 ```bash

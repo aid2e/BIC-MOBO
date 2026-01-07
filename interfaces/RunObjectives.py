@@ -7,14 +7,6 @@
 #    trial manager.
 # =============================================================================
 
-import argparse
-import datetime
-import os
-import re
-import subprocess
-
-import EICMOBOTestTools as emt 
-
 def RunObjectives(tag = None, **kwargs):
     """RunObjectives
 
@@ -29,16 +21,22 @@ def RunObjectives(tag = None, **kwargs):
       dictionary of objectives and their values
     """
 
-    # extract path to script being run currently
-    main_path, main_file = emt.SplitPathAndFile(
-        os.path.realpath(__file__)
-    )
+    # NB use lazy importing to make sure
+    # dependencies get picked up
+    import argparse
+    import datetime
+    import os
+    import re
+    import subprocess
+    import EICMOBOTestTools as emt
 
-    # determine paths to config files
-    #   -- FIXME this is brittle!
-    run_path = main_path + "/../configuration/run.config"
-    par_path = main_path + "/../configuration/parameters.config"
-    obj_path = main_path + "/../configuration/objectives.config"
+    # grab path to problem installation so we
+    # can locate the config files
+    mobo_path = os.getenv('BIC_MOBO')
+    print(f"CHECK --> path = {mobo_path}")
+    run_path  = mobo_path + "/configuration/run.config"
+    par_path  = mobo_path + "/configuration/parameters.config"
+    obj_path  = mobo_path + "/configuration/objectives.config"
 
     # create trial manager
     trial = emt.TrialManager(run_path,
@@ -79,7 +77,6 @@ def RunObjectives(tag = None, **kwargs):
 if __name__ == "__main__":
 
     # parse keyword arguments
-    #   -- TODO automate adding parameters to parser
     parser = argparse.ArgumentParser()
     parser.add_argument("--tag", "--tag", help = "Trial tag", type = str, default = None)
     parser.add_argument("--enable_staves_2", "--enable_staves_2", help = "Stave 2 value", type = int)
@@ -90,7 +87,6 @@ if __name__ == "__main__":
 
     # grab arguments & create dictionary
     # of parameters
-    #   -- TODO this can also be automated
     args   = parser.parse_args()
     params = {
         "enable_staves_2" : args.enable_staves_2,
