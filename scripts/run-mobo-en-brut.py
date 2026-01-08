@@ -62,14 +62,11 @@ def main(*args, **kwargs):
                         param = [stave2, stave3, stave4, stave5, stave6]
                         params.append(param)
 
-    # extract path to script being run currently
+    # extract path path to run config
     # and set runner paths
-    #   - FIXME this should get automated!
-    main_path, main_file = emt.SplitPathAndFile(
-        os.path.realpath(__file__)
-    )
-    run_path = main_path + "/configuration/run.config"
-    obj_run  = main_path + "/interfaces/RunObjectives.py"
+    mobo_path = os.getenv('BIC_MOBO')
+    run_path  = mobo_path + "/configuration/run.config"
+    obj_run   = mobo_path + "/interfaces/RunObjectives.py"
 
     # load relevant config files
     cfg_run = emt.ReadJsonFile(run_path)
