@@ -38,8 +38,12 @@ def main(*args, **kwargs):
       slurm  -- use slurm runner
       panda  -- use panda runner (TODO)
 
+    And can provide a JSON file to load
+    an experiment from with the -x option
+
     Args:
       -r: specify runner (optional)
+      -x: specify experiment to load (optional)
     """
 
     # set up arguments
@@ -101,7 +105,10 @@ def main(*args, **kwargs):
             parameter_constraints = ax_par_cons
         )
     else:
-        ax_client = AxClient().load_from_json_file(args.experiment)
+        if os.path.isfile(args.experiment):
+            ax_client = AxClient().load_from_json_file(args.experiment)
+        else:
+            raise FileNotFoundError(f"File {args.experiment} not found!")
 
     # set up runners
     runner = None
