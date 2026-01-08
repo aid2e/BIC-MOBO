@@ -7,6 +7,8 @@
 #    trial manager.
 # =============================================================================
 
+import argparse
+
 def RunObjectives(tag = None, **kwargs):
     """RunObjectives
 
@@ -23,7 +25,6 @@ def RunObjectives(tag = None, **kwargs):
 
     # NB use lazy importing to make sure
     # dependencies get picked up
-    import argparse
     import datetime
     import os
     import re
