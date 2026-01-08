@@ -1,4 +1,17 @@
 #!/bin/bash
+# ===============================================
+# @file   launch-mobo
+# @author Derek Anderson
+# @date   12.02.2025
+# -----------------------------------------------
+# Launch a slurm pilot job. Can provide path to
+# a JSON file that's stored the state of an
+# Ax experiment with the argument -x
+#
+# Usage:
+#   sbatch launch-mobo
+#   sbatch lauch-mobo -x <path-to-the-json>
+# ===============================================
 #SBATCH --account=<your-account>
 #SBATCH --partition=<your-partition>
 #SBATCH --mail-user=<your-email-address>
@@ -9,4 +22,15 @@
 #SBATCH --output=<where-the-logs-go>/pilot.out
 #SBATCH --error=<where-the-logs-go>/pilot.err
 
-python run-bic-mobo.py -r slurm
+if [ $# -gt 0 ]; then
+  while getopts x: flag; do
+    case "${flag}" in
+      x) experiment=${OPTARG};;
+    esac
+  done
+  python run-bic-mobo-alt.py -r slurm -x "$experiment"
+else
+  python run-bic-mobo-alt.py -r slurm
+fi
+
+# end ===========================================
