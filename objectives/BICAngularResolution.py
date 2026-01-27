@@ -12,7 +12,8 @@
 #        -i <input file> \
 #        -o <output file> \
 #        -c <coordinate> \
-#        -p <pdg code>
+#        -p <pdg code> \
+#        -b <branch> (optional)
 # =============================================================================
 
 import argparse as ap
@@ -23,17 +24,19 @@ import sys
 from podio.reading import get_reader
 
 # default arguments
-IFileDefault = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
-OFileDefault = "test_reso.root"
-CoordDefault = "phi"
-PDGDefault   = 11
+IFileDefault  = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
+OFileDefault  = "test_reso.root"
+CoordDefault  = "phi"
+PDGDefault    = 11
+BranchDefault = "EcalBarrelClusterAssociations"
 
 
 def CalculateAngReso(
-    ifile = IFileDefault,
-    ofile = OFileDefault,
-    coord = CoordDefault,
-    pdg   = PDGDefault
+    ifile  = IFileDefault,
+    ofile  = OFileDefault,
+    coord  = CoordDefault,
+    pdg    = PDGDefault,
+    branch = BranchDefault
 ):
     """CalculateAngReso
 
@@ -41,10 +44,11 @@ def CalculateAngReso(
     specified species of particle.
 
     Args:
-      ifile: input file name
-      ofile: output file name
-      coord: coordinate to calculate resolution on
-      pdg:   PDG code of particle species
+      ifile:  input file name
+      ofile:  output file name
+      coord:  coordinate to calculate resolution on
+      pdg:    PDG code of particle species
+      branch: EICrecon branch to analyze
     Returns:
       calculated resolution
     """
@@ -78,7 +82,7 @@ def CalculateAngReso(
     for iframe, frame in enumerate(reader.get("events")):
 
         # grab truth-cluster associations
-        assocs = frame.get("EcalBarrelClusterAssociations")
+        assocs = frame.get(branch)
 
         # now hunt down clusters associated with electron
         for assoc in assocs:
@@ -216,6 +220,15 @@ if __name__ == "__main__":
         const = PDGDefault,
         default = PDGDefault,
         type = int
+    )
+    parser.add_argument(
+        "-b",
+        "--branch",
+        help = "Branch to use",
+        nargs = '?',
+        const = BranchDefault,
+        default = BranchDefault,
+        type = str
     )
 
     # grab arguments
