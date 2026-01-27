@@ -1,5 +1,5 @@
 # =============================================================================
-## @file   run-bic-mobo.py
+## @file   run-analyses.py
 #  @author Derek Anderson
 #  @date   10.27.2025
 # -----------------------------------------------------------------------------
@@ -460,7 +460,7 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     match ana:
         case 0:
             sResIntVsTrialU  = "Single e^{-} #deltaE vs. Trial Number (Unnormalized); #deltaE = (E_{clust} - E_{par}) / E_{par}; counts"
-            sResIntVsTrialN  = "Single e^{-} #deltaE vs. Trial Number (Normalized); #deltaE = E_{clust} - E_{par}) / E_{par}; normalized counts"
+            sResIntVsTrialN  = "Single e^{-} #deltaE vs. Trial Number (Normalized); #deltaE = (E_{clust} - E_{par}) / E_{par}; normalized counts"
             sResIntVsTrial2D = "Single e^{-} #deltaE vs. Trial Number (Normalized); #deltaE = (E_{clust} - E_{par}) / E_{par}; trial"
         case 1:
             sResIntVsTrialU  = "Single e^{-} #delta#eta vs. Trial Number (Unnormalized); #delta#eta = (#eta_{clust} - #eta_{par}) / #eta_{par}; counts"
