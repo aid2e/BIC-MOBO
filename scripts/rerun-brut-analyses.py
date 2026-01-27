@@ -1,10 +1,10 @@
 # =============================================================================
-## @file   run-analyses.py
+## @file   rerun-brut-analyses.py
 #  @author Derek Anderson
-#  @date   10.27.2025
+#  @date   01.26.2026
 # -----------------------------------------------------------------------------
-## @brief Run several different analyses
-#    on BIC-MOBO output.
+## @brief Run several different analyses 
+#    on BIC-MOBO brut output.
 # =============================================================================
 
 from dataclasses import dataclass
@@ -29,7 +29,6 @@ class Option:
 
     Members:
       doBasic:    turn on/off basic analysis
-      doAx:       turn on/off Ax-based analyses
       doRoot:     turn on/off ROOT-based analyses
       doEne:      process energy resolution output
       doEta:      process eta resolution output
@@ -43,12 +42,10 @@ class Option:
       outEneRoot: regex pattern to glob relevant energy reso ROOT output files
       outEtaRoot: regex pattern to glob relevant eta reso ROOT output files
       outPhiRoot: regex pattern to glob relevant phi reso ROOT output files
-      outExp:     saved Ax experiment to analyze
       palette:    ROOT color palette to use
     """
     doBasic    : bool
     doRoot     : bool
-    doAx       : bool
     doEne      : bool
     doEta      : bool
     doPhi      : bool
@@ -61,29 +58,37 @@ class Option:
     outEneRoot : str
     outEtaRoot : str
     outPhiRoot : str
-    outExp     : str
     palette    : int
 
 # set global options
 GlobalOpts = Option(
     doBasic    = True,
     doRoot     = True,
-    doAx       = False,
-    doEne      = True,
+    doEne      = False,
     doEta      = True,
     doPhi      = True,
-    baseTag    = "fullBrutProduction",
-    dateTag    = "d5m1y2025",
-    outPath    = "./TestOutput_Step2_RunBrutProduction",
-    outEneTxt  = "*EnergyReso*.txt",
-    outEtaTxt  = "*EtaReso*.txt",
-    outPhiTxt  = "*PhiReso*.txt",
-    outEneRoot = "*EnergyReso*.root",
-    outEtaRoot = "*EtaReso*.root",
-    outPhiRoot = "*PhiReso*.root",
-    outExp     = "../out/bic_mobo_exp_out.json",
+    baseTag    = "checkAngReso_ecalClusters_fineBins_defaultBin",
+    dateTag    = "d26m1y2026",
+    outPath    = "./output",
+    outEneTxt  = "checkAngReso_ecalClusters_fineBins_ene_BrutTrial*.d26m1y2026.txt",
+    outEtaTxt  = "checkAngReso_ecalClusters_fineBins_eta_BrutTrial*.d26m1y2026.txt",
+    outPhiTxt  = "checkAngReso_ecalClusters_fineBins_phi_BrutTrial*.d26m1y2026.txt",
+    outEneRoot = "checkAngReso_ecalClusters_fineBins_ene_BrutTrial*.d26m1y2026.root",
+    outEtaRoot = "checkAngReso_ecalClusters_fineBins_eta_BrutTrial*.d26m1y2026.root",
+    outPhiRoot = "checkAngReso_ecalClusters_fineBins_phi_BrutTrial*.d26m1y2026.root",
     palette    = 60
 )
+
+# -----------------------------------------------------------------------------
+# No. of staves vs. trial
+# -----------------------------------------------------------------------------
+NStaves = [0, 1, 1, 2, 1,
+           2, 2, 2, 1, 1,
+           2, 3, 2, 3, 3,
+           4, 1, 2, 2, 3,
+           2, 3, 3, 4, 2,
+           3, 3, 4, 3, 4,
+           4, 5]
 
 # -----------------------------------------------------------------------------
 # Optional dependencies
@@ -159,22 +164,12 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
         eReso  = pd.DataFrame({'eReso' : float(data[1])}, index = [0])
         mean   = pd.DataFrame({'mean' : float(data[2])}, index = [0])
         eMean  = pd.DataFrame({'eMean' : float(data[3])}, index = [0])
-        stave2 = pd.DataFrame({'stave2' : int(data[4])}, index = [0])
-        stave3 = pd.DataFrame({'stave3' : int(data[5])}, index = [0])
-        stave4 = pd.DataFrame({'stave4' : int(data[6])}, index = [0])
-        stave5 = pd.DataFrame({'stave5' : int(data[7])}, index = [0])
-        stave6 = pd.DataFrame({'stave6' : int(data[8])}, index = [0])
         stem   = pd.DataFrame({'file' : file.stem}, index = [0])
         trial  = pd.DataFrame({'trial' : iTrial}, index = [0])
 
         # calculate the number of staves active
         #   -- NOTE stave 1 is always active!
-        nActive = 1
-        for stave in data[4:]:
-            active = int(stave)
-            if active == 1:
-                nActive += 1
-        nStave = pd.DataFrame({'nStave' : nActive}, index = [0])
+        nStave = pd.DataFrame({'nStave' : NStaves[iTrial] + 1}, index = [0])
 
         # join data into a single frame, append
         # to big frame, and increment trial no.
@@ -184,14 +179,9 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
                 eReso,
                 mean,
                 eMean,
-                stave2,
-                stave3,
-                stave4,
-                stave5,
-                stave6,
-                nStave,
                 stem,
-                trial
+                trial,
+                nStave
            ],
            axis = 1
         )
@@ -203,7 +193,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     print(f"      Combined metrics and data:")
     print(outData.head())
 
-    # set titles/axes
+    # set titles/axes/ranges
     trialPlotTitles  = list()
     trialPlotTitlesX = list()
     trialPlotTitlesY = list()
@@ -235,7 +225,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
 
             # set axis ranges
             resoRange = tuple([-0.007, 0.33])
-            meanRange = tuple([-0.07, 0.07])
+            meanRange = tuple([-0.07, 0.07]) 
 
         # eta resolution
         case 1:
@@ -258,7 +248,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
 
             # set axis ranges
             resoRange = tuple([-0.007, 0.13])
-            meanRange = tuple([-0.07, 0.07])
+            meanRange = tuple([-0.07, 0.07]) 
 
         # phi resolution
         case 2:
@@ -281,7 +271,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
 
             # set axis ranges
             resoRange = tuple([-0.007, 0.13])
-            meanRange = tuple([-0.07, 0.07])
+            meanRange = tuple([-0.07, 0.07]) 
 
     # last vs trial plot is the same regardless of objective
     trialPlotTitles.append(r'$N_{\text{staves}}$ vs. Trial Number')
@@ -483,9 +473,9 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     hResIntVsTrial2D = ROOT.TH2D(
         "hResIntVsTrial2D",
         sResIntVsTrial2D,
-        50,
-        -2.,
-        3.,
+        500,
+        -2.5,
+        2.5,
         nTrials,
         0,
         nTrials
@@ -532,7 +522,7 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
         hResIntU.SetMarkerStyle(24)
         hResIntU.SetFillStyle(0)
         hResIntU.GetXaxis().SetTitleOffset(1.2)
-        hResIntU.GetXaxis().SetTitleOffset(1.5)
+        hResIntU.GetYaxis().SetTitleOffset(1.5)
         hResIntN.SetMarkerStyle(24)
         hResIntN.SetFillStyle(0)
         hResIntN.GetXaxis().SetTitleOffset(1.2)
@@ -642,52 +632,6 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     # annuounce saving
     print("      Saved ROOT objects")
 
-# -----------------------------------------------------------------------------
-# Ax analyses
-# -----------------------------------------------------------------------------
-
-def DoAxAnalyses(opts = GlobalOpts):
-    """DoAxAnalyses
-
-    Runs a set of built-in
-    Ax analyses.
-
-    Args:
-      opts: analysis options
-    """
-
-    # announce start of Ax analyses
-    print("    Running Ax analyses")
-
-    # load saved experiment
-    client = Client()
-    client = client.load_from_json_file(
-        filepath = opts.outExp
-    )
-    print(f"      Loaded experiment from {opts.outExp}")
-
-    # run calculations
-    cards = client.compute_analyses(display = True)
-    print(f"      Ran calculations:")
-    print(f"        {cards}")
-
-    # save plots for later
-    for card in cards:
-
-        # skip summary card (info is already in csv)
-        if card.name == "Summary":
-            continue
-
-        # otherwise, create save html
-        name  = card.name
-        title = card.title
-        title = title.replace(' ', '').replace('.', '').replace(',', 'vs')
-        file  = opts.baseTag + ".axOutput." + name + "." + title + "." + opts.dateTag  + ".html"
-        card.get_figure().write_html(file)
-
-    # announce saving
-    print("      Saved Ax cards")
-
 # main ========================================================================
 
 if __name__ == "__main__":
@@ -710,15 +654,6 @@ if __name__ == "__main__":
         nargs = '?',
         const = GlobalOpts.doRoot,
         default = GlobalOpts.doRoot,
-        type = bool
-    )
-    parser.add_argument(
-        "--doAx",
-        "--doAx",
-        help = "turn on/off Ax-based analyses",
-        nargs = '?',
-        const = GlobalOpts.doAx,
-        default = GlobalOpts.doAx,
         type = bool
     )
     parser.add_argument(
@@ -830,15 +765,6 @@ if __name__ == "__main__":
         type = str
     )
     parser.add_argument(
-        "--outExp",
-        "--outExp",
-        help = "saved Ax experiment to analyze",
-        nargs = '?',
-        const = GlobalOpts.outExp,
-        default = GlobalOpts.outExp,
-        type = str
-    )
-    parser.add_argument(
         "--palette",
         "--palette",
         help = "ROOT color palette to use",
@@ -856,7 +782,6 @@ if __name__ == "__main__":
     opts = Option(
         doBasic    = args.doBasic,
         doRoot     = args.doRoot,
-        doAx       = args.doAx,
         doEne      = args.doEne,
         doEta      = args.doEta,
         doPhi      = args.doPhi,
@@ -869,7 +794,6 @@ if __name__ == "__main__":
         outEneRoot = args.outEneRoot,
         outEtaRoot = args.outEtaRoot,
         outPhiRoot = args.outPhiRoot,
-        outExp     = args.outExp,
         palette    = args.palette
     )
     print(f"    Set options:")
@@ -890,8 +814,6 @@ if __name__ == "__main__":
             DoRootAnalyses(1, opts.outEtaRoot, "eta", opts)
         if opts.doPhi:
             DoRootAnalyses(2, opts.outPhiRoot, "phi", opts)
-    if opts.doAx:
-        DoAxAnalyses(opts)
 
     # announce end
     print("  Analyses complete!\n")
