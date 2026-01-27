@@ -3,8 +3,8 @@
 #  @author Derek Anderson
 #  @date   10.27.2025
 # -----------------------------------------------------------------------------
-## @brief Load a saved Ax experiment and run
-#    some analyses. 
+## @brief Run several different analyses
+#    on BIC-MOBO output.
 # =============================================================================
 
 from dataclasses import dataclass
@@ -15,9 +15,6 @@ import os
 import pandas as pd
 import pathlib
 import seaborn as sns
-
-from ax import Client
-from ax.analysis.plotly.plotly_analysis import PlotlyAnalysisCard
 
 # -----------------------------------------------------------------------------
 # Global Options
@@ -96,6 +93,8 @@ if GlobalOpts.doRoot:
     import ROOT
 
 if GlobalOpts.doAx:
+    from ax import Client
+    from ax.analysis.plotly.plotly_analysis import PlotlyAnalysisCard
     from ax.modelbridge.cross_validation import cross_validate
     from ax.plot.contour import interact_contour
     from ax.plot.diagnostic import interact_cross_validation
@@ -211,6 +210,8 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     stavePlotTitles  = list()
     stavePlotTitlesX = list()
     stavePlotTitlesY = list()
+    resoRange        = tuple()
+    meanRange        = tuple()
     match ana:
 
         # energy resolution
@@ -232,6 +233,10 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
             stavePlotTitlesX.append(r'$N_{\text{staves}}$')
             stavePlotTitlesY.append(r'$\mu_{\delta E} = \langle (E_{rec} - E_{par}) / E_{par} \rangle$')
 
+            # set axis ranges
+            resoRange = tuple([-0.007, 0.33])
+            meanRange = tuple([-0.07, 0.07])
+
         # eta resolution
         case 1:
 
@@ -251,6 +256,10 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
             stavePlotTitlesX.append(r'$N_{\text{staves}}$')
             stavePlotTitlesY.append(r'$\mu_{\delta\eta} = \langle (\eta_{rec} - \eta_{par}) / \eta_{par} \rangle$')
 
+            # set axis ranges
+            resoRange = tuple([-0.007, 0.13])
+            meanRange = tuple([-0.07, 0.07])
+
         # phi resolution
         case 2:
 
@@ -269,6 +278,10 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
             stavePlotTitles.append(r'Single $e^{-}$ $\mu_{\delta\phi}$ vs. $N_{\text{staves}}$')
             stavePlotTitlesX.append(r'$N_{\text{staves}}$')
             stavePlotTitlesY.append(r'$\mu_{\delta\phi} = \langle (\phi_{rec} - \phi_{par}) / \phi_{par} \rangle$')
+
+            # set axis ranges
+            resoRange = tuple([-0.007, 0.13])
+            meanRange = tuple([-0.07, 0.07])
 
     # last vs trial plot is the same regardless of objective
     trialPlotTitles.append(r'$N_{\text{staves}}$ vs. Trial Number')
@@ -313,10 +326,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     trialPlots[0].set_title(trialPlotTitles[0])
     trialPlots[0].set_xlabel(trialPlotTitlesX[0])
     trialPlots[0].set_ylabel(trialPlotTitlesY[0])
-    trialPlots[0].set_ylim(-0.007, 0.33)
-
-    # adjust range
-    #raxis = trialPlots[0].gca()
+    trialPlots[0].set_ylim(resoRange[0], resoRange[1])
 
     # plot mean vs. trial in middle panel
     trialPlots[1].scatter(
@@ -342,11 +352,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     trialPlots[1].set_title(trialPlotTitles[1])
     trialPlots[1].set_xlabel(trialPlotTitlesX[1])
     trialPlots[1].set_ylabel(trialPlotTitlesY[1])
-    trialPlots[1].set_ylim(-0.33, 0.33)
-
-    # adjust range
-    #maxis = trialPlots[1].gca()
-    #maxis.set_ylim(-0.33, 0.33)
+    trialPlots[1].set_ylim(meanRange[0], meanRange[1])
 
     # plot n active stave vs. trial in bottom panel
     trialPlots[2].scatter(
@@ -372,7 +378,6 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     plt.show()
     print(f"      Created figure for variables vs. trial #: {trialName}")
 
-
     # create a figure for vars vs. nstave
     staveFig, stavePlots = plt.subplots(
         nrows = 2,
@@ -392,6 +397,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     stavePlots[0].set_title(stavePlotTitles[0])
     stavePlots[0].set_xlabel(stavePlotTitlesX[0])
     stavePlots[0].set_ylabel(stavePlotTitlesY[0])
+    stavePlots[0].set_ylim(resoRange[0], resoRange[1])
 
     # plot mean vs. n active stave in bottom-right panel
     stavePlots[1].scatter(
@@ -403,6 +409,7 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     stavePlots[1].set_title(stavePlotTitles[1])
     stavePlots[1].set_xlabel(stavePlotTitlesX[1])
     stavePlots[1].set_ylabel(stavePlotTitlesY[1])
+    stavePlots[1].set_ylim(meanRange[0], meanRange[1])
 
     # now create vs. nstave figure name and save
     staveName = opts.baseTag + "." + label + ".vsNStave." + opts.dateTag + ".png"
@@ -452,17 +459,17 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     sResIntVsTrial2D = None
     match ana:
         case 0:
-            sResIntVsTrialU  = "Single e^{-} #mu_{#deltaE} vs. Trial Number (Unnormalized);#mu_{#deltaE} = #LT (E_{clust} - E_{par}) / E_{par} #RT; counts"
-            sResIntVsTrialN  = "Single e^{-} #mu_{#deltaE} vs. Trial Number (Normalized);#mu_{#deltaE} = #LT (E_{clust} - E_{par}) / E_{par} #RT; a.u."
-            sResIntVsTrial2D = "Single e^{-} #mu_{#deltaE} vs. Trial Number (Normalized);#mu_{#deltaE} = #LT (E_{clust} - E_{par}) / E_{par} #RT; trial"
+            sResIntVsTrialU  = "Single e^{-} #deltaE vs. Trial Number (Unnormalized); #deltaE = (E_{clust} - E_{par}) / E_{par}; counts"
+            sResIntVsTrialN  = "Single e^{-} #deltaE vs. Trial Number (Normalized); #deltaE = E_{clust} - E_{par}) / E_{par}; normalized counts"
+            sResIntVsTrial2D = "Single e^{-} #deltaE vs. Trial Number (Normalized); #deltaE = (E_{clust} - E_{par}) / E_{par}; trial"
         case 1:
-            sResIntVsTrialU  = "Single e^{-} #mu_{#delta#eta} vs. Trial Number (Unnormalized);#mu_{#delta#eta} = #LT (#eta_{clust} - #eta_{par}) / #eta_{par} #RT; counts"
-            sResIntVsTrialN  = "Single e^{-} #mu_{#delta#eta} vs. Trial Number (Normalized);#mu_{#delta#eta} = #LT (#eta_{clust} - #eta_{par}) / #eta_{par} #RT; a.u."
-            sResIntVsTrial2D = "Single e^{-} #mu_{#delta#eta} vs. Trial Number (Normalized);#mu_{#delta#eta} = #LT (#eta_{clust} - #eta_{par}) / #eta_{par} #RT; trial"
+            sResIntVsTrialU  = "Single e^{-} #delta#eta vs. Trial Number (Unnormalized); #delta#eta = (#eta_{clust} - #eta_{par}) / #eta_{par}; counts"
+            sResIntVsTrialN  = "Single e^{-} #delta#eta vs. Trial Number (Normalized); #delta#eta = (#eta_{clust} - #eta_{par}) / #eta_{par}; normalized counts"
+            sResIntVsTrial2D = "Single e^{-} #delta#eta vs. Trial Number (Normalized); #delta#eta = (#eta_{clust} - #eta_{par}) / #eta_{par}; trial"
         case 2:
-            sResIntVsTrialU  = "Single e^{-} #mu_{#delta#phi} vs. Trial Number (Unnormalized);#mu_{#delta#phi} = #LT (#phi_{clust} - #phi_{par}) / #phi_{par} #RT; counts"
-            sResIntVsTrialN  = "Single e^{-} #mu_{#delta#phi} vs. Trial Number (Normalized);#mu_{#delta#phi} = #LT (#phi_{clust} - #phi_{par}) / #phi_{par} #RT; a.u."
-            sResIntVsTrial2D = "Single e^{-} #mu_{#delta#phi} vs. Trial Number (Normalized);#mu_{#delta#phi} = #LT (#phi_{clust} - #phi_{par}) / #phi_{par} #RT; trial"
+            sResIntVsTrialU  = "Single e^{-} #delta#phi vs. Trial Number (Unnormalized); #delta#phi = (#phi_{clust} - #phi_{par}) / #phi_{par}; counts"
+            sResIntVsTrialN  = "Single e^{-} #delta#phi vs. Trial Number (Normalized); #delta#phi = (#phi_{clust} - #phi_{par}) / #phi_{par}; normalized counts"
+            sResIntVsTrial2D = "Single e^{-} #delta#phi vs. Trial Number (Normalized); #delta#phi = (#phi_{clust} - #phi_{par}) / #phi_{par}; trial"
 
     # create hists for resolution vs. trial
     hResIntVsTrialU = ROOT.THStack(
@@ -521,17 +528,15 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
         hResIntU.SetNameTitle(uName, trial)
         hResIntN.SetNameTitle(nName, trial)
 
-        # adjust attributes
+        # adjust 1D attributes
         hResIntU.SetMarkerStyle(24)
         hResIntU.SetFillStyle(0)
-        hResIntU.GetXaxis().CenterTitle(1)
-        hResIntU.GetXaxis().SetTitleOffset(1.0)
-        hResIntU.GetYaxis().CenterTitle(1)
+        hResIntU.GetXaxis().SetTitleOffset(1.2)
+        hResIntU.GetXaxis().SetTitleOffset(1.5)
         hResIntN.SetMarkerStyle(24)
         hResIntN.SetFillStyle(0)
-        hResIntN.GetXaxis().CenterTitle(1)
-        hResIntN.GetXaxis().SetTitleOffset(1.0)
-        hResIntN.GetYaxis().CenterTitle(1)
+        hResIntN.GetXaxis().SetTitleOffset(1.2)
+        hResIntN.GetYaxis().SetTitleOffset(1.5)
 
         # turn off fit visualization
         hResIntU.GetFunction(iFunc).SetBit(ROOT.TF1.kNotDraw)
@@ -561,6 +566,12 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
                 hResIntN.GetBinContent(iBin)
             )
 
+        # adjust 2D attributes
+        hResIntU.GetXaxis().SetTitleOffset(1.2)
+        hResIntU.GetYaxis().SetTitleOffset(1.5)
+        hResIntN.GetXaxis().SetTitleOffset(1.2)
+        hResIntN.GetYaxis().SetTitleOffset(1.5)
+
         # and store in output dicts
         hists.append(hResIntU)
         hists.append(hResIntN)
@@ -578,11 +589,8 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     cResIntVsTrialU = ROOT.TCanvas("cResNoNorm", "", 950, 950)
     cResIntVsTrialU.cd()
     cResIntVsTrialU.SetRightMargin(0.02)
+    cResIntVsTrialU.SetLeftMargin(0.15)
     hResIntVsTrialU.Draw("pfc plc pmc nostack")
-    hResIntVsTrialU.GetXaxis().CenterTitle(1)
-    hResIntVsTrialU.GetXaxis().SetTitleOffset(1.2)
-    hResIntVsTrialU.GetYaxis().CenterTitle(1)
-    hResIntVsTrialU.GetYaxis().SetTitleOffset(1.2)
     cResIntVsTrialU.BuildLegend(0.7, 0.7, 0.9, 0.9, "", "pf")
 
     canNameU = opts.baseTag + "." + label + ".resNoNormVsTrial1D." + opts.dateTag + ".png"
@@ -593,11 +601,8 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
     cResIntVsTrialN = ROOT.TCanvas("cResNormed", "", 950, 950)
     cResIntVsTrialN.cd()
     cResIntVsTrialN.SetRightMargin(0.02)
+    cResIntVsTrialN.SetLeftMargin(0.15)
     hResIntVsTrialN.Draw("pfc plc pmc nostack")
-    hResIntVsTrialN.GetXaxis().CenterTitle(1)
-    hResIntVsTrialN.GetXaxis().SetTitleOffset(1.2)
-    hResIntVsTrialN.GetYaxis().CenterTitle(1)
-    hResIntVsTrialN.GetYaxis().SetTitleOffset(1.2)
     cResIntVsTrialN.BuildLegend(0.7, 0.7, 0.9, 0.9, "", "pf")
 
     canNameN = opts.baseTag + "." + label + ".resNormVsTrial1D." + opts.dateTag + ".png"
@@ -606,18 +611,16 @@ def DoRootAnalyses(ana, glob, label, opts = GlobalOpts):
 
     # create 2D normalized energy differnece vs. trial (color)
     cResIntVsTrial2DC = ROOT.TCanvas("cEneResNormed2DC", "", 950, 950)
+    cResIntVsTrial2DC.SetLeftMargin(0.15)
     cResIntVsTrial2DC.cd()
     hResIntVsTrial2D.Draw("colz")
-    hResIntVsTrial2D.GetXaxis().CenterTitle(1)
-    hResIntVsTrial2D.GetXaxis().SetTitleOffset(1.2)
-    hResIntVsTrial2D.GetYaxis().CenterTitle(1)
-    hResIntVsTrial2D.GetYaxis().SetTitleOffset(1.2)
 
     canName2DC = opts.baseTag + "." + label + ".resNormed2D_col." + opts.dateTag + ".png"
     cResIntVsTrial2DC.SaveAs(canName2DC)
 
     # create 2D normalized energy differnece vs. trial (box)
     cResIntVsTrial2DB = ROOT.TCanvas("cEneResNormed2DB", "", 950, 950)
+    cResIntVsTrial2DB.SetLeftMargin(0.15)
     cResIntVsTrial2DB.cd()
     hResIntVsTrial2D.Draw("box")
 
