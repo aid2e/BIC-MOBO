@@ -123,6 +123,9 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
       glob:  regex pattern to glob
       label: label for output files
       opts:  analysis options
+    Returns:
+      dictionary of dataframe with resolution,
+      scale, etc. and a label
     """
 
     # announce start of basic analyses
@@ -407,6 +410,221 @@ def DoBasicAnalyses(ana, glob, label, opts = GlobalOpts):
     plt.savefig(staveName, dpi = 300, bbox_inches = "tight")
     plt.show()
     print(f"      Created figure for variables vs. N staves: {staveName}")
+
+    # return dataframe of output for any
+    # later analysis
+    return {label : outData}
+
+def PlotResosTogether(frames, opts = GlobalOpts):
+    """PlotResosTogether
+
+    Plots a set of resolutions
+    (and otherwise) on top of
+    each other.
+
+    Args:
+      frame: list of dictionaries with
+             dataframes with output from
+             basic analyses and their label
+      opts:  analysis options
+    """
+
+    # plot titles
+    trialPlotTitles = [
+        r'Single $e^{-}$ resolution vs. trial number',
+        r'Single $e^{-}$ Scale vs. trial number',
+        "Trial",
+        "Resolution",
+        "Scale"
+    ]
+    stavePlotTitles = [
+        r'Single $e^{-}$ resolution vs. $N_{\text{staves}}$',
+        r'Single $e^{-}$ Scale vs. $N_{\text{staves}}$',
+        "Trial",
+        "Resolution",
+        "Scale"
+    ]
+
+    # legend entries
+    resoLegs = {
+        "ene" : "Energy resolution",
+        "eta" : r'$\eta$ resolution',
+        "phi" : r'$\phi$ resolution'
+    }
+    meanLegs = {
+        "ene" : "Energy scale",
+        "eta" : r'$\eta$ scale',
+        "phi" : r'$\phi$ scale'
+    }
+
+    # styles
+    colors = {
+        "ene" : "darkorange",
+        "eta" : "indianred",
+        "phi" : "indigo"
+    }
+    markers = {
+        "ene" : "o",
+        "eta" : "s",
+        "phi" : "D"
+    }
+
+    # set plot style
+    sns.set(style = "white")
+
+    # create figures for vars vs. trial
+    trialFig, trialPlots = plt.subplots(
+        nrows = 2,
+        ncols = 1,
+        figsize = (8, 12),
+        sharex = True,
+        sharey = False
+    )
+
+    # plot vars vs. trial
+    for label, frame in frames.items():
+
+        # plot resolutions in top panel
+        trialPlots[0].scatter(
+           frame["trial"],
+           frame["reso"],
+           color = colors[label],
+           alpha = 0.5,
+           marker = markers[label],
+           label = resoLegs[label]
+        )
+        trialPlots[0].errorbar(
+            frame["trial"],
+            frame["reso"],
+            yerr = frame["eReso"],
+            ecolor = colors[label],
+            capsize = 7,
+            fmt = 'none'
+        )
+        trialPlots[0].plot(
+            frame["trial"],
+            frame["reso"],
+            color = colors[label],
+            linewidth = 0.8
+        )
+
+        # plot scale in bottom panel
+        trialPlots[1].scatter(
+           frame["trial"],
+           frame["mean"],
+           color = colors[label],
+           alpha = 0.5,
+           marker = markers[label],
+           label = meanLegs[label]
+        )
+        trialPlots[1].errorbar(
+            frame["trial"],
+            frame["mean"],
+            yerr = frame["eReso"],
+            ecolor = colors[label],
+            capsize = 7,
+            fmt = 'none'
+        )
+        trialPlots[1].plot(
+            frame["trial"],
+            frame["mean"],
+            color = colors[label],
+            linewidth = 0.8
+        )
+
+    # set vs. trial titles/ranges
+    trialPlots[0].set_title(trialPlotTitles[0])
+    trialPlots[0].set_xlabel(trialPlotTitles[2])
+    trialPlots[0].set_ylabel(trialPlotTitles[3])
+    trialPlots[0].set_ylim(-0.007, 0.33)
+    trialPlots[1].set_title(trialPlotTitles[1])
+    trialPlots[1].set_xlabel(trialPlotTitles[2])
+    trialPlots[1].set_ylabel(trialPlotTitles[4])
+    trialPlots[1].set_ylim(-0.07, 0.07)
+
+    # now create vs. trial figure name and save
+    trialName = opts.baseTag + ".vsTrialNum." + opts.dateTag + ".png"
+    plt.legend(loc = "upper right")
+    plt.tight_layout()
+    plt.savefig(trialName, dpi = 300, bbox_inches = "tight")
+    plt.show()
+
+    # create figure for vars vs. n active staves
+    staveFig, stavePlots = plt.subplots(
+        nrows = 2,
+        ncols = 1,
+        figsize = (8, 12),
+        sharex = True,
+        sharey = False
+    )
+
+    # plot vars vs. n active stave
+    for label, frame in frames.items():
+
+        # plot resolutions in top panel
+        stavePlots[0].scatter(
+           frame["nStave"],
+           frame["reso"],
+           color = colors[label],
+           alpha = 0.5,
+           marker = markers[label],
+           label = resoLegs[label]
+        )
+        stavePlots[0].errorbar(
+            frame["nStave"],
+            frame["reso"],
+            yerr = frame["eReso"],
+            ecolor = colors[label],
+            capsize = 7,
+            fmt = 'none'
+        )
+        stavePlots[0].plot(
+            frame["nStave"],
+            frame["reso"],
+            color = colors[label],
+            linewidth = 0.8
+        )
+
+        # plot scale vs. in bottom panel
+        stavePlots[1].scatter(
+           frame["nStave"],
+           frame["mean"],
+           color = colors[label],
+           alpha = 0.5,
+           marker = markers[label],
+           label = meanLegs[label]
+        )
+        stavePlots[1].errorbar(
+            frame["nStave"],
+            frame["mean"],
+            yerr = frame["eReso"],
+            ecolor = colors[label],
+            capsize = 7,
+            fmt = 'none'
+        )
+        stavePlots[1].plot(
+            frame["nStave"],
+            frame["mean"],
+            color = colors[label],
+            linewidth = 0.8
+        )
+
+    # set vs. n active stave titles/ranges
+    stavePlots[0].set_title(stavePlotTitles[0])
+    stavePlots[0].set_xlabel(stavePlotTitles[2])
+    stavePlots[0].set_ylabel(stavePlotTitles[3])
+    stavePlots[0].set_ylim(-0.007, 0.33)
+    stavePlots[1].set_title(stavePlotTitles[1])
+    stavePlots[1].set_xlabel(stavePlotTitles[2])
+    stavePlots[1].set_ylabel(stavePlotTitles[4])
+    stavePlots[1].set_ylim(-0.007, 0.33)
+
+    # finally create vs. n active stave figure name and save
+    staveName = opts.baseTag + "." + label + ".allVarsVsNStave." + opts.dateTag + ".png"
+    plt.legend(loc = "upper right")
+    plt.tight_layout()
+    plt.savefig(staveName, dpi = 300, bbox_inches = "tight")
+    plt.show()
 
 # -----------------------------------------------------------------------------
 # ROOT analyses
@@ -801,12 +1019,18 @@ if __name__ == "__main__":
 
     # run analyses
     if opts.doBasic:
+        basicFrames = dict()
         if opts.doEne:
-            DoBasicAnalyses(0, opts.outEneTxt, "ene", opts)
+            eneFrames = DoBasicAnalyses(0, opts.outEneTxt, "ene", opts)
+            basicFrames.update(eneFrames)
         if opts.doEta:
-            DoBasicAnalyses(1, opts.outEtaTxt, "eta", opts)
+            etaFrames = DoBasicAnalyses(1, opts.outEtaTxt, "eta", opts)
+            basicFrames.update(etaFrames)
         if opts.doPhi:
-            DoBasicAnalyses(2, opts.outPhiTxt, "phi", opts)
+            phiFrames = DoBasicAnalyses(2, opts.outPhiTxt, "phi", opts)
+            basicFrames.update(phiFrames)
+        if len(basicFrames) != 0:
+            PlotResosTogether(basicFrames, opts)
     if opts.doRoot:
         if opts.doEne:
             DoRootAnalyses(0, opts.outEneRoot, "ene", opts)
