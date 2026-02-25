@@ -33,20 +33,25 @@ class GeometryEditor:
         """
         self.cfgRun = ConfigParser.ReadJsonFile(run)
 
-    def __GetNewXMLName(self, name, tag):
-        """GetNewXMLName
+    def __GetNewName(self, name, tag, ext = ".xml"):
+        """GetNewName
 
         Helper method to add tag to provided
-        filename of xml.
+        filename.
 
         Args:
-          name: name of the xml file to tag
+          name: name of the file to tag
           tag:  the tag to append
+          ext:  the extension of the file
         Returns:
           filename with tag appended
         """
-        newSuffix = "_aid2e_" + tag + ".xml"
-        newName   = name.replace(".xml", newSuffix)
+        newSuffix = "_aid2e_" + tag + ext
+        newName   = name
+        if  ext == "":
+            newName = name + newSuffix
+        else:
+            newName = name.replace(ext, newSuffix)
         return newName
 
     def __GetCompact(self, param, tag):
@@ -65,7 +70,9 @@ class GeometryEditor:
 
         # extract path and create relevant name
         oldCompact = self.cfgRun["det_path"] + "/" + param["compact"]
-        newCompact = self.__GetNewXMLName(oldCompact, tag)
+        newCompact = oldCompact
+        if not oldCompact.endswith(tag + ".xml"):
+            newCompact = self.__GetNewName(oldCompact, tag)
 
         # if new compact does not exist, create it
         if not os.path.exists(newCompact):
@@ -89,7 +96,9 @@ class GeometryEditor:
 
         # extract path and create relevant name
         oldConfig = self.cfgRun["det_path"] + "/" + self.cfgRun["det_config"] + ".xml"
-        newConfig = self.__GetNewXMLName(oldConfig, tag) 
+        newConfig = oldConfig
+        if not oldConfig.endswith(tag + ".xml"):
+            newConfig = self.__GetNewName(oldConfig, tag)
 
         # if new config does not exist, create it
         if not os.path.exists(newConfig):
@@ -98,22 +107,25 @@ class GeometryEditor:
         # and return path
         return newConfig
 
-    def __GetFile(self, file, tag):
+    def __GetFile(self, file, tag, ext = ".xml"):
         """GetFile
 
-        Checks if an xml file associated with a
-        particular tag exists and returns the path
-        to it. If it doesn't exist, it creates it.
+        Checks if a file associated with a particular
+        tag exists and returns the path to it. If it
+        doesn't exist, it creates it.
 
         Args:
-          file: the xml file to get/created
+          file: the file to get/be created
           tag:  the tag associated with the current trial
+          ext:  the extension of the file
         Returns:
-          path to the xml file with tag
+          path to the file with tag
         """
 
         # create relevant name
-        newFile = self.__GetNewXMLName(file, tag)
+        newFile = file
+        if not file.endswith(tag + ext):
+            newFile = self.__GetNewName(file, tag, ext)
 
         # if new file does not exist, create it
         if not os.path.exists(newFile):
@@ -200,7 +212,7 @@ class GeometryEditor:
         # grab old & new compact files
         # associated with parameter
         oldCompact = param["compact"]
-        newCompact = self.__GetNewXMLName(oldCompact, tag)
+        newCompact = self.__GetNewName(oldCompact, tag)
 
         # find old compact and replace
         # with new one
@@ -231,12 +243,11 @@ class GeometryEditor:
         # step 1:grab old & new compact files
         #   associated with parameter
         oldCompact = param["compact"]
-        newCompact = self.__GetNewXMLName(oldCompact, tag)
+        newCompact = self.__GetNewName(oldCompact, tag)
 
         # step 2: split old compact path into directories
         #   relative to cfg["det_path"] to search in
         split = oldCompact.split('/')
-        split.insert(0, "")
 
         # step 3: now iterate upwards through sequence
         #   of directories to check to find related
@@ -248,7 +259,7 @@ class GeometryEditor:
 
             # step 3(a): loop through all files in directory
             search = '/'.join(part for part in split[0:steps - step])
-            root   = self.cfgRun["det_path"] + search
+            root   = self.cfgRun["det_path"] + '/' + search
             new    = list()
             for file in os.listdir(self.cfgRun["det_path"] + "/" + search):
 
@@ -265,7 +276,7 @@ class GeometryEditor:
                         #   new version with filenames
                         #   updated accordingly
                         copy     = self.__GetFile(full, tag)
-                        update   = self.__GetNewXMLName(query, tag)
+                        update   = self.__GetNewName(query, tag)
                         editable = pathlib.Path(copy)
                         text     = editable.read_text(encoding="utf-8")
                         edited   = text.replace(query, update)
@@ -281,5 +292,30 @@ class GeometryEditor:
 
             queries.extend(new)
             queries[:] = [f"{add}/{query}" for query in queries]
+
+        # step 4: now identify all YAML configurations
+        #   that contain one of the updated files
+        config  = self.cfgRun["det_path"] + "/configurations"
+        for file in os.listdir(config):
+
+            full = config + "/" + file
+            if os.path.isdir(full):
+                continue
+
+            # step 4(a): check if any updated compact files'
+            #   stems appear in configuration
+            for query in queries:
+                stem = os.path.splitext(os.path.basename(query))[0]
+                if self.__IsPatternInFile(stem, full):
+
+                    # step 4(b): if it does, create new
+                    #   version and update stems
+                    #   accordingly
+                    copy     = self.__GetFile(full, tag, ".yml")
+                    update   = self.__GetNewName(stem, tag, "")
+                    editable = pathlib.Path(copy)
+                    text     = editable.read_text(encoding="utf-8")
+                    edited   = text.replace(stem, update)
+                    editable.write_text(edited, encoding="utf-8")
 
 # end =========================================================================
