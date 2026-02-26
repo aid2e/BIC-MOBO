@@ -95,7 +95,8 @@ class GeometryEditor:
         """
 
         # extract path and create relevant name
-        oldConfig = self.cfgRun["det_path"] + "/" + self.cfgRun["det_config"] + ".xml"
+        install   = self.cfgRun["det_path"] + "/install/share/epic/"
+        oldConfig = install + self.cfgRun["det_config"] + ".xml"
         newConfig = oldConfig
         if not oldConfig.endswith(tag + ".xml"):
             newConfig = self.__GetNewName(oldConfig, tag)
