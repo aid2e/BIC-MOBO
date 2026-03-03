@@ -16,6 +16,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from EICMOBOTestTools import ConfigParser
+from EICMOBOTestTools import FileManager
 
 class GeometryEditor:
     """GeometryEditor
@@ -33,22 +34,6 @@ class GeometryEditor:
         """
         self.cfgRun = ConfigParser.ReadJsonFile(run)
 
-    def __GetNewXMLName(self, name, tag):
-        """GetNewXMLName
-
-        Helper method to add tag to provided
-        filename of xml.
-
-        Args:
-          name: name of the xml file to tag
-          tag:  the tag to append
-        Returns:
-          filename with tag appended
-        """
-        newSuffix = "_aid2e_" + tag + ".xml"
-        newName   = name.replace(".xml", newSuffix)
-        return newName
-
     def __GetCompact(self, param, tag):
         """GetCompact
 
@@ -65,7 +50,9 @@ class GeometryEditor:
 
         # extract path and create relevant name
         oldCompact = self.cfgRun["det_path"] + "/" + param["compact"]
-        newCompact = self.__GetNewXMLName(oldCompact, tag)
+        newCompact = oldCompact
+        if not oldCompact.endswith(tag + ".xml"):
+            newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # if new compact does not exist, create it
         if not os.path.exists(newCompact):
@@ -88,8 +75,11 @@ class GeometryEditor:
         """
 
         # extract path and create relevant name
-        oldConfig = self.cfgRun["det_path"] + "/" + self.cfgRun["det_config"] + ".xml"
-        newConfig = self.__GetNewXMLName(oldConfig, tag) 
+        install   = self.cfgRun["det_path"] + "/install/share/epic/"
+        oldConfig = install + self.cfgRun["det_config"] + ".xml"
+        newConfig = oldConfig
+        if not oldConfig.endswith(tag + ".xml"):
+            newConfig = FileManager.GetNewName(oldConfig, tag)
 
         # if new config does not exist, create it
         if not os.path.exists(newConfig):
@@ -98,22 +88,25 @@ class GeometryEditor:
         # and return path
         return newConfig
 
-    def __GetFile(self, file, tag):
+    def __GetFile(self, file, tag, ext = ".xml"):
         """GetFile
 
-        Checks if an xml file associated with a
-        particular tag exists and returns the path
-        to it. If it doesn't exist, it creates it.
+        Checks if a file associated with a particular
+        tag exists and returns the path to it. If it
+        doesn't exist, it creates it.
 
         Args:
-          file: the xml file to get/created
+          file: the file to get/be created
           tag:  the tag associated with the current trial
+          ext:  the extension of the file
         Returns:
-          path to the xml file with tag
+          path to the file with tag
         """
 
         # create relevant name
-        newFile = self.__GetNewXMLName(file, tag)
+        newFile = file
+        if not file.endswith(tag + ext):
+            newFile = FileManager.GetNewName(file, tag, ext)
 
         # if new file does not exist, create it
         if not os.path.exists(newFile):
@@ -200,7 +193,7 @@ class GeometryEditor:
         # grab old & new compact files
         # associated with parameter
         oldCompact = param["compact"]
-        newCompact = self.__GetNewXMLName(oldCompact, tag)
+        newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # find old compact and replace
         # with new one
@@ -231,12 +224,11 @@ class GeometryEditor:
         # step 1:grab old & new compact files
         #   associated with parameter
         oldCompact = param["compact"]
-        newCompact = self.__GetNewXMLName(oldCompact, tag)
+        newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # step 2: split old compact path into directories
         #   relative to cfg["det_path"] to search in
         split = oldCompact.split('/')
-        split.insert(0, "")
 
         # step 3: now iterate upwards through sequence
         #   of directories to check to find related
@@ -248,7 +240,7 @@ class GeometryEditor:
 
             # step 3(a): loop through all files in directory
             search = '/'.join(part for part in split[0:steps - step])
-            root   = self.cfgRun["det_path"] + search
+            root   = self.cfgRun["det_path"] + '/' + search
             new    = list()
             for file in os.listdir(self.cfgRun["det_path"] + "/" + search):
 
@@ -265,12 +257,18 @@ class GeometryEditor:
                         #   new version with filenames
                         #   updated accordingly
                         copy     = self.__GetFile(full, tag)
-                        update   = self.__GetNewXMLName(query, tag)
+                        update   = FileManager.GetNewName(query, tag)
                         editable = pathlib.Path(copy)
                         text     = editable.read_text(encoding="utf-8")
-                        edited   = text.replace(query, update)
-                        editable.write_text(edited, encoding="utf-8")
 
+                        # if the query + tag already exists in
+                        # file, no need to do anything
+                        edited = text
+                        if update not in text:
+                            edited = text.replace(query, update)
+
+                        # save text and add file queries
+                        editable.write_text(edited, encoding="utf-8")
                         if file not in new:
                             new.append(file)
 
@@ -281,5 +279,37 @@ class GeometryEditor:
 
             queries.extend(new)
             queries[:] = [f"{add}/{query}" for query in queries]
+
+        # step 4: now identify all YAML configurations
+        #   that contain one of the updated files
+        config  = self.cfgRun["det_path"] + "/configurations"
+        for file in os.listdir(config):
+
+            full = config + "/" + file
+            if os.path.isdir(full):
+                continue
+
+            # step 4(a): check if any updated compact files'
+            #   stems appear in configuration
+            for query in queries:
+                stem = os.path.splitext(os.path.basename(query))[0]
+                if self.__IsPatternInFile(stem, full):
+
+                    # step 4(b): if it does, create new
+                    #   version and update stems
+                    #   accordingly
+                    copy     = self.__GetFile(full, tag, ".yml")
+                    update   = FileManager.GetNewName(stem, tag, "")
+                    editable = pathlib.Path(copy)
+                    text     = editable.read_text(encoding="utf-8")
+
+                    # like before, if stem + tag already exists
+                    # in config file, no need to do anything
+                    edited = text
+                    if update not in text:
+                        edited = text.replace(stem, update)
+
+                    # save text and iterate
+                    editable.write_text(edited, encoding="utf-8")
 
 # end =========================================================================

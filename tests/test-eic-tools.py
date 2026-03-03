@@ -118,14 +118,16 @@ anagen = emt.AnaGenerator("../configuration/run.config", "../configuration/objec
 # recreate output name for input to
 # test ana generator
 steeTag = emt.ConvertSteeringToTag("central.e5ele.py")
+simOutA = emt.MakeOutName("test2A", intest, steeTag, "sim")
+simOutB = emt.MakeOutName("test2B", intest, steeTag, "sim")
 recOutA = emt.MakeOutName("test2A", intest, steeTag, "rec")
 recOutB = emt.MakeOutName("test2B", intest, steeTag, "rec")
 outDirA = enviro["out_path"] + "/test2A/" + recOutA
 outDirB = enviro["out_path"] + "/test2B/" + recOutB
 
 # try to create an analysis command
-doanaA, ofileA = anagen.MakeCommand("test2A", intest, "ElectronEnergyResolution", outDirA)
-doanaB, ofileB = anagen.MakeCommand("test2B", intest, "ElectronEnergyResolution", outDirB)
+doanaA, ofileA = anagen.MakeCommand("test2A", intest, "ElectronEnergyResolution", simOutA, recOutA)
+doanaB, ofileB = anagen.MakeCommand("test2B", intest, "ElectronEnergyResolution", simOutB, recOutB)
 print(f"[2][Test E] Created commands to do analysis")
 print(f"  (A) command = {doanaA}")
 print(f"      output  = {ofileA}")

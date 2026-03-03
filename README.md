@@ -134,7 +134,7 @@ installations and relevent scripts, eg.
     "eic_shell"     : "<path-to-your-script>/eic-shell",
     "epic_setup"    : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
     "overlap_check" : "checkOverlaps",
-    "det_path"      : "<where-the-geo-goes>/epic/install/share/epic",
+    "det_path"      : "<where-the-geo-goes>/epic",
     "det_config"    : "epic",
     "sim_exec"      : "npsim",
     "sim_input"     : {

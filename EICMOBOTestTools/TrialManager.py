@@ -120,12 +120,17 @@ class TrialManager:
         self.__DoGeometryEdits(params)
         self.__SetRecoArgs(params)
 
+        # create command to recompile geo
+        recompGeo = self.simGen.MakeGeoRecompileCommand()
+        commands  = [recompGeo]
+
         # create commands to set detector path, config
         setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
-            self.cfgRun["det_config"]
+            self.cfgRun["det_config"],
+            self.tag
         )
-        commands = [setDetInstall, setDetConfig]
+        commands.extend([setDetInstall, setDetConfig])
 
         # check for overlaps
         commands.append(

@@ -28,17 +28,45 @@ class SimGenerator:
         """
         self.cfgRun = ConfigParser.ReadJsonFile(run)
 
+    def MakeGeoRecompileCommand(self):
+        """MakeGeoRecompileCommand
+
+        Generates command to recompile
+        geometry after making edits.
+
+        Args:
+          ...
+        Returns:
+          commands to be run
+        """
+
+        # commands to run to recompile geo
+        geo = self.cfgRun["det_path"]
+        comps = [
+            f'cd {geo}',
+            'cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install',
+            'cmake --build build',
+            'cmake --install build',
+            'cd -',
+        ]
+        comp = ""
+        for line in comps:
+            comp += line + "\n"
+
+        # return full command
+        return comp
+
     def MakeOverlapCheckCommand(self, tag):
         """MakeOverlapCheckCommand
 
-        Generates command to run overlap check
+        Generates commands to run overlap check
         and exit subprocess if an overlap is
         found.
 
         Args:
           tag: tag associated with current trial
         Returns:
-          command to be run
+          commands to be run
         """
 
         # make sure output directory
@@ -52,16 +80,15 @@ class SimGenerator:
 
         # command(s) to exit if there were any overlaps
         checks = [
-          f'grep -F "Number of illegal overlaps/extrusions : " {log} | while IFS= read -r line; do',
-          '  lastChar="${line: -1}"',
-          '  if [[ $lastChar =~ ^[0-9]$ ]]; then',
-          '    if (( lastChar > 0 )); then',
-          '      exit 9',
-          '    fi',
-          '  fi',
-          'done'
+            f'grep -F "Number of illegal overlaps/extrusions : " {log} | while IFS= read -r line; do',
+            '  lastChar="${line: -1}"',
+            '  if [[ $lastChar =~ ^[0-9]$ ]]; then',
+            '    if (( lastChar > 0 )); then',
+            '      exit 9',
+            '    fi',
+            '  fi',
+            'done'
         ]
-        #check = "\n".join(line for line in checks) + "\n"
         check = ""
         for line in checks:
             check += line + "\n"
@@ -150,7 +177,8 @@ class SimGenerator:
         # make commands to set detector config
         setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
-            config
+            config,
+            tag
         )
 
         # make command to check overlap
