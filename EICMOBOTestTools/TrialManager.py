@@ -124,6 +124,13 @@ class TrialManager:
         recompGeo = self.simGen.MakeGeoRecompileCommand()
         commands  = [recompGeo]
 
+        # if using default config, create modified
+        # config with compacts updated
+        if self.cfgRun["det_config"] == "epic":
+            commands.append(
+                self.geoEdit.MakeConfigCopyCommand(self.tag)
+            )
+
         # create commands to set detector path, config
         setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],

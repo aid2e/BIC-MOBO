@@ -312,4 +312,24 @@ class GeometryEditor:
                     # save text and iterate
                     editable.write_text(edited, encoding="utf-8")
 
+    def MakeConfigCopyCommand(self, tag):
+        """MakeConfigCopyCOmmand
+
+        If using default config (epic.xml), then we'll need
+        to create a modified default config from epic_full.xml
+        (which is identical).
+
+        Args:
+          tag: the tag to be applied
+        Returns:
+          command to be run
+        """
+        # -- FIXME this is a stopgap! This won't work for generic
+        #    DD4hep geometries! This will be dealt with when we
+        #    transition to AID2E-framework...
+        installPath = self.cfgRun["det_path"] + "/install/share/epic/"
+        fullConfig  = installPath + FileManager.GetNewName("epic_full.xml", tag)
+        defConfig   = installPath + FileManager.GetNewName("epic.xml", tag)
+        return "cp " + fullConfig + " " + defConfig
+
 # end =========================================================================
