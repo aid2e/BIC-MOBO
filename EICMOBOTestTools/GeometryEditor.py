@@ -16,6 +16,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 from EICMOBOTestTools import ConfigParser
+from EICMOBOTestTools import FileManager
 
 class GeometryEditor:
     """GeometryEditor
@@ -32,27 +33,6 @@ class GeometryEditor:
           run: runtime configuration file
         """
         self.cfgRun = ConfigParser.ReadJsonFile(run)
-
-    def __GetNewName(self, name, tag, ext = ".xml"):
-        """GetNewName
-
-        Helper method to add tag to provided
-        filename.
-
-        Args:
-          name: name of the file to tag
-          tag:  the tag to append
-          ext:  the extension of the file
-        Returns:
-          filename with tag appended
-        """
-        newSuffix = "_aid2e_" + tag + ext
-        newName   = name
-        if  ext == "":
-            newName = name + newSuffix
-        else:
-            newName = name.replace(ext, newSuffix)
-        return newName
 
     def __GetCompact(self, param, tag):
         """GetCompact
@@ -72,7 +52,7 @@ class GeometryEditor:
         oldCompact = self.cfgRun["det_path"] + "/" + param["compact"]
         newCompact = oldCompact
         if not oldCompact.endswith(tag + ".xml"):
-            newCompact = self.__GetNewName(oldCompact, tag)
+            newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # if new compact does not exist, create it
         if not os.path.exists(newCompact):
@@ -99,7 +79,7 @@ class GeometryEditor:
         oldConfig = install + self.cfgRun["det_config"] + ".xml"
         newConfig = oldConfig
         if not oldConfig.endswith(tag + ".xml"):
-            newConfig = self.__GetNewName(oldConfig, tag)
+            newConfig = FileManager.GetNewName(oldConfig, tag)
 
         # if new config does not exist, create it
         if not os.path.exists(newConfig):
@@ -126,7 +106,7 @@ class GeometryEditor:
         # create relevant name
         newFile = file
         if not file.endswith(tag + ext):
-            newFile = self.__GetNewName(file, tag, ext)
+            newFile = FileManager.GetNewName(file, tag, ext)
 
         # if new file does not exist, create it
         if not os.path.exists(newFile):
@@ -213,7 +193,7 @@ class GeometryEditor:
         # grab old & new compact files
         # associated with parameter
         oldCompact = param["compact"]
-        newCompact = self.__GetNewName(oldCompact, tag)
+        newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # find old compact and replace
         # with new one
@@ -244,7 +224,7 @@ class GeometryEditor:
         # step 1:grab old & new compact files
         #   associated with parameter
         oldCompact = param["compact"]
-        newCompact = self.__GetNewName(oldCompact, tag)
+        newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # step 2: split old compact path into directories
         #   relative to cfg["det_path"] to search in
@@ -277,12 +257,18 @@ class GeometryEditor:
                         #   new version with filenames
                         #   updated accordingly
                         copy     = self.__GetFile(full, tag)
-                        update   = self.__GetNewName(query, tag)
+                        update   = FileManager.GetNewName(query, tag)
                         editable = pathlib.Path(copy)
                         text     = editable.read_text(encoding="utf-8")
-                        edited   = text.replace(query, update)
-                        editable.write_text(edited, encoding="utf-8")
 
+                        # if the query + tag already exists in
+                        # file, no need to do anything
+                        edited = text
+                        if update not in text:
+                            edited = text.replace(query, update)
+
+                        # save text and add file queries
+                        editable.write_text(edited, encoding="utf-8")
                         if file not in new:
                             new.append(file)
 
@@ -313,10 +299,17 @@ class GeometryEditor:
                     #   version and update stems
                     #   accordingly
                     copy     = self.__GetFile(full, tag, ".yml")
-                    update   = self.__GetNewName(stem, tag, "")
+                    update   = FileManager.GetNewName(stem, tag, "")
                     editable = pathlib.Path(copy)
                     text     = editable.read_text(encoding="utf-8")
-                    edited   = text.replace(stem, update)
+
+                    # like before, if stem + tag already exists
+                    # in config file, no need to do anything
+                    edited = text
+                    if update not in text:
+                        edited = text.replace(stem, update)
+
+                    # save text and iterate
                     editable.write_text(edited, encoding="utf-8")
 
 # end =========================================================================

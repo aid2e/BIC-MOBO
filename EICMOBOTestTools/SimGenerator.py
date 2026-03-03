@@ -177,7 +177,8 @@ class SimGenerator:
         # make commands to set detector config
         setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
-            config
+            config,
+            tag
         )
 
         # make command to check overlap

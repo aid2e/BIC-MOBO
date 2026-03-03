@@ -178,7 +178,8 @@ class RecGenerator:
         # make commands to set detector config
         setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
-            config
+            config,
+            tag
         )
 
         # if an eicrecon installation is specified,

@@ -127,7 +127,8 @@ class TrialManager:
         # create commands to set detector path, config
         setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
             self.cfgRun["epic_setup"],
-            self.cfgRun["det_config"]
+            self.cfgRun["det_config"],
+            self.tag
         )
         commands.extend([setDetInstall, setDetConfig])
 
