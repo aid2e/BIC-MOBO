@@ -166,6 +166,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # run analysis
-    CalculateEneReso(args.input, args.output, args.pdg)
+    CalculateClustEneReso(args.input, args.output, args.pdg)
 
 # end =========================================================================
