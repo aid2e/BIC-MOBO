@@ -170,23 +170,23 @@ def MakeScriptName(tag, label = "", steer = "", stage = "", analysis = ""):
     body = GetBody(label, steer, stage)
     return "do_aid2e_" + tag + body + ".sh"
 
-def MakeDetSetCommands(setup, config, tag):
+def MakeDetSetCommands(detector, config, tag):
     """MakeDetSetCommands
 
     Creates commands to set relevant
     detector path and configuration.
 
     Args:
-      setup:  path to geometry installation script
-      config: name of new detector config
-      tag:    the tag to append
+      detector: path to the geometry to use
+      config:   name of new detector config
+      tag:      the tag to append
     Returns:
-      tuple of commands to set new detector path and config
+      commands to set new detector path and config as a string
     """
     newConfig = GetNewName(config, tag, "")
-    setInsall = "source " + setup
+    setInsall = "source " + detector + "/install/bin/thisepic.sh\n"
     setConfig = "export DETECTOR_CONFIG=" + newConfig
-    return setInsall, setConfig
+    return setInsall + setConfig
 
 def MakeRecSetCommands(setup):
     """MakeRecSetCommands

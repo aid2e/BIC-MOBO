@@ -24,6 +24,7 @@ __all__ = [
     "ReadJsonFile",
     "GetConfigFromPath",
     "GetBody",
+    "GetNewName",
     "GetParameter",
     "GetPathElementAndUnits",
     "GetSuffix",

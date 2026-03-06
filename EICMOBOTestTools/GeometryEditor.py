@@ -12,6 +12,7 @@ import os
 import pathlib
 import re
 import shutil
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
@@ -26,13 +27,16 @@ class GeometryEditor:
     for a trial.
     """
 
-    def __init__(self, run):
+    def __init__(self, run, tag):
         """constructor accepting arguments
 
         Args:
           run: runtime configuration file
         """
-        self.cfgRun = ConfigParser.ReadJsonFile(run)
+        self.cfgRun  = ConfigParser.ReadJsonFile(run)
+        self.runPath = self.cfgRun["run_path"] + "/" + tag
+        self.geoDir  = pathlib.PurePath(self.cfgRun["det_path"]).name
+        self.detPath = self.runPath + "/" + self.geoDir
 
     def __GetCompact(self, param, tag):
         """GetCompact
@@ -49,7 +53,7 @@ class GeometryEditor:
         """
 
         # extract path and create relevant name
-        oldCompact = self.cfgRun["det_path"] + "/" + param["compact"]
+        oldCompact = self.detPath + "/" + param["compact"]
         newCompact = oldCompact
         if not oldCompact.endswith(tag + ".xml"):
             newCompact = FileManager.GetNewName(oldCompact, tag)
@@ -75,7 +79,7 @@ class GeometryEditor:
         """
 
         # extract path and create relevant name
-        install   = self.cfgRun["det_path"] + "/install/share/epic/"
+        install   = self.detPath + "/install/share/epic/"
         oldConfig = install + self.cfgRun["det_config"] + ".xml"
         newConfig = oldConfig
         if not oldConfig.endswith(tag + ".xml"):
@@ -140,6 +144,23 @@ class GeometryEditor:
         # return whether or not pattern was ever found
         return found
 
+    def CopyGeoToRunDir(self):
+        """GopyGeoToRunDir
+
+        Copies geometry specifed by `det_path` to run
+        directory of trial. Should be called BEFORE
+        calling `EditCompact`, `EditRelatedFiles`, or
+        `DoGeoRecomp`.
+        """
+        FileManager.MakeDir(self.runPath) # makes run dir if needed
+        if os.path.exists(self.detPath ):
+            subprocess.run(["rm", "-r", self.detPath])
+        shutil.copytree(
+            self.cfgRun['det_path'],
+            self.detPath,
+            ignore=shutil.ignore_patterns('.*')
+        )
+
     def EditCompact(self, param, value, tag):
         """EditCompact
 
@@ -171,42 +192,6 @@ class GeometryEditor:
         treeToEdit.write(fileToEdit)
         return
 
-    def EditConfig(self, param, tag):
-        """EditConfig
-
-        Updates the compact file associated with
-        a provided parameter in the config file
-        associated with the provided tag.
-
-        Args:
-          param: the parameter and its associated compact file
-          tag:   the tag associated with the current trial
-        Returns:
-          new config name
-        """
-
-        # get path to config file to edit, and
-        # parse the xml
-        fileToEdit = self.__GetConfig(tag)
-        treeToEdit = ET.parse(fileToEdit)
-
-        # grab old & new compact files
-        # associated with parameter
-        oldCompact = param["compact"]
-        newCompact = FileManager.GetNewName(oldCompact, tag)
-
-        # find old compact and replace
-        # with new one
-        path="${DETECTOR_PATH}/"
-        for element in treeToEdit.getroot().findall('.//include'):
-            if element.get('ref') == str(path + oldCompact):
-                element.set('ref', str(path + newCompact))
-                break
-
-        # save edits and exit
-        treeToEdit.write(fileToEdit)
-        return fileToEdit
-
     def EditRelatedFiles(self, param, tag):
         """EditRelatedFiles
 
@@ -217,8 +202,6 @@ class GeometryEditor:
         Args:
           param: the parameter and its associated compact file
           tag:   the tag associated with the current trial
-        Returns:
-          ...
         """
 
         # step 1:grab old & new compact files
@@ -227,7 +210,7 @@ class GeometryEditor:
         newCompact = FileManager.GetNewName(oldCompact, tag)
 
         # step 2: split old compact path into directories
-        #   relative to cfg["det_path"] to search in
+        #   relative to self.detPath to search in
         split = oldCompact.split('/')
 
         # step 3: now iterate upwards through sequence
@@ -240,9 +223,9 @@ class GeometryEditor:
 
             # step 3(a): loop through all files in directory
             search = '/'.join(part for part in split[0:steps - step])
-            root   = self.cfgRun["det_path"] + '/' + search
+            root   = self.detPath + '/' + search
             new    = list()
-            for file in os.listdir(self.cfgRun["det_path"] + "/" + search):
+            for file in os.listdir(self.detPath + "/" + search):
 
                 full = root + "/" + file
                 if os.path.isdir(full):
@@ -282,7 +265,7 @@ class GeometryEditor:
 
         # step 4: now identify all YAML configurations
         #   that contain one of the updated files
-        config  = self.cfgRun["det_path"] + "/configurations"
+        config  = self.detPath + "/configurations"
         for file in os.listdir(config):
 
             full = config + "/" + file
@@ -327,9 +310,110 @@ class GeometryEditor:
         # -- FIXME this is a stopgap! This won't work for generic
         #    DD4hep geometries! This will be dealt with when we
         #    transition to AID2E-framework...
-        installPath = self.cfgRun["det_path"] + "/install/share/epic/"
+        installPath = self.detPath + "/install/share/epic/"
         fullConfig  = installPath + FileManager.GetNewName("epic_full.xml", tag)
         defConfig   = installPath + FileManager.GetNewName("epic.xml", tag)
         return "cp " + fullConfig + " " + defConfig
+
+    def MakeGeoRecompileCommand(self):
+        """MakeGeoRecompileCommand
+
+        Generates command to recompile
+        geometry after making edits.
+
+        Returns:
+          commands to be run
+        """
+
+        # commands to run to recompile geo
+        comps  = [
+            f'cd {self.detPath}',
+            'cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install',
+            'cmake --build build',
+            'cmake --install build',
+            'cd -'
+        ]
+        comp = "\n".join(comps)
+
+        # return full command
+        return comp
+
+    def MakeOverlapCheckCommand(self, tag):
+        """MakeOverlapCheckCommand
+
+        Generates commands to run overlap check
+        and exit subprocess if an overlap is
+        found.
+
+        Args:
+          tag: tag associated with current trial
+        Returns:
+          commands to be run
+        """
+
+        # make sure output directory
+        # exists for trial
+        outDir = self.cfgRun["out_path"] + "/" + tag
+        FileManager.MakeDir(outDir)
+
+        # command to do overlap check
+        log = outDir + "/" + FileManager.MakeOutName("geo", tag)
+        run = self.cfgRun["overlap_check"] + " -c $DETECTOR_PATH/$DETECTOR_CONFIG.xml > " + log + " 2>&1"
+
+        # command(s) to exit if there were any overlaps
+        checks = [
+            f'grep -F "Number of illegal overlaps/extrusions : " {log} | while IFS= read -r line; do',
+            '  lastChar="${line: -1}"',
+            '  if [[ $lastChar =~ ^[0-9]$ ]]; then',
+            '    if (( lastChar > 0 )); then',
+            '      exit 9',
+            '    fi',
+            '  fi',
+            'done'
+        ]
+        check = "\n".join(checks)
+
+        # return full command
+        return run + "\n" + check
+
+    def MakeBuildScript(self, tag, config):
+        """MakeBuildScript
+
+        Generates single script to build geometry
+        and test for overlaps.
+
+        Args:
+          tag:    the tag associated with the current trial
+          config: the detector config file to use
+        Returns:
+          path to the script created
+        """
+
+        # construct script name
+        geoScript  = FileManager.MakeScriptName(tag, "", "", "geo")
+        scriptPath = self.runPath + "/" + geoScript
+
+        # make commands
+        build    = self.MakeGeoRecompileCommand()
+        detector = FileManager.MakeDetSetCommands(
+            self.detPath,
+            self.cfgRun["det_config"],
+            tag
+        )
+        overlap = self.MakeOverlapCheckCommand(tag)
+
+        # compose script
+        with open(scriptPath, 'w') as script:
+            script.write("#!/bin/bash\n\n")
+            script.write("set -e\n\n")
+            script.write(build + "\n\n")
+            script.write(detector + "\n\n")
+            script.write(overlap + "\n\n")
+
+        # make sure script can be run
+        os.chmod(scriptPath, 0o777)
+
+        # return path to script
+        return scriptPath
 
 # end =========================================================================

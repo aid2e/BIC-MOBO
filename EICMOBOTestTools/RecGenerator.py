@@ -8,7 +8,7 @@
 # =============================================================================
 
 import os
-import stat
+import pathlib
 
 from EICMOBOTestTools import ConfigParser
 from EICMOBOTestTools import FileManager
@@ -174,10 +174,11 @@ class RecGenerator:
         steeTag   = FileManager.ConvertSteeringToTag(steer)
         recScript = FileManager.MakeScriptName(tag, label, steeTag, "rec")
         recPath   = runDir + "/" + recScript
+        detPath   = runDir + "/" + pathlib.PurePath(self.cfgRun["det_path"]).name
 
         # make commands to set detector config
-        setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
-            self.cfgRun["epic_setup"],
+        setDet = FileManager.MakeDetSetCommands(
+            detPath,
             config,
             tag
         )
@@ -193,8 +194,7 @@ class RecGenerator:
         # compose script
         with open(recPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
-            script.write(setDetInstall + "\n")
-            script.write(setDetConfig + "\n\n")
+            script.write(setDet + "\n\n")
             if setRecInstall:
                 script.write(setRecInstall + "\n\n")
             script.write(command)

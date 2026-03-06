@@ -38,31 +38,34 @@ finally:
 # (1) Test GeometryEditor -----------------------------------------------------
 
 # create a geometry editor
-geditor = emt.GeometryEditor("../configuration/run.config")
+geditor1A = emt.GeometryEditor("../configuration/run.config", "test1A")
+geditor1B = emt.GeometryEditor("../configuration/run.config", "test1B")
+
+# copy geo source to run directories
+geditor1A.CopyGeoToRunDir()
+geditor1B.CopyGeoToRunDir()
 
 # edit a couple parameters in one compact file
-geditor.EditCompact(enable2, 1, "test1A")
-geditor.EditCompact(enable3, 0, "test1A")
+geditor1A.EditCompact(enable2, 1, "test1A")
+geditor1A.EditCompact(enable3, 0, "test1A")
 print(f"[1][test A] set values of staves 2, 3 to 1, 0 respectively")
 
-# now create config files associated with
+# now edit config files associated with
 # compact; the 2nd line should leave
-# config file unmodified
-configA = geditor.EditConfig(enable2, "test1A")
-configA = geditor.EditConfig(enable3, "test1A")
-print(f"[1][Test A] config file {configA} created")
+# config files unmodified
+geditor1A.EditRelatedFiles(enable2, "test1A")
+geditor1A.EditRelatedFiles(enable3, "test1A")
+print(f"[1][Test A] edited related files")
 
 # create a 2nd compact file with multiple
 # subsystems modified
 enable5 = emt.GetParameter("enable_staves_5", "../configuration/parameters.config")
-geditor.EditCompact(enable5, 1, "test1B")
+geditor1B.EditCompact(enable5, 1, "test1B")
 print(f"[1][test B] set value of stave 5 to 1")
 
-# this one should create a new config file,
-# and the 2nd line should add the modified
-# dRICH file
-configB = geditor.EditConfig(enable5, "test1B")
-print(f"[1][test B] config file {configB} created")
+# now edit all related config files
+geditor1B.EditRelatedFiles(enable5, "test1B")
+print(f"[1][test B] edited related files")
 
 # (2) Test generators  --------------------------------------------------------
 
@@ -80,17 +83,12 @@ print(f"[2][Test A] Created commands to do simulation:")
 print(f"  {dosimA}")
 print(f"  {dosimB}")
 
-# grab just the config names from
-# our previous test
-conPathA, conFileA = emt.SplitPathAndFile(configA)
-conFileA = conFileA.replace(".xml", "")
-
-conPathB, conFileB = emt.SplitPathAndFile(configB)
-conFileB = conFileB.replace(".xml", "")
+# grab config name
+config = enviro["det_config"]
 
 # now try to create a simulation driver script
-runsimA = simgen.MakeScript("test2A", intest, "central.e5ele.py", conFileA, dosimA)
-runsimB = simgen.MakeScript("test2B", intest, "central.e5ele.py", conFileB, dosimB)
+runsimA = simgen.MakeScript("test2A", intest, "central.e5ele.py", config, dosimA)
+runsimB = simgen.MakeScript("test2B", intest, "central.e5ele.py", config, dosimB)
 print(f"[2][Test B] created driver scripts for simulation:")
 print(f"  {runsimA}")
 print(f"  {runsimB}")
@@ -106,8 +104,8 @@ print(f"  {dorecA}")
 print(f"  {dorecB}")
 
 # and now try to create a reconstruction driver script
-runrecA = recgen.MakeScript("test2A", intest, "central.e5ele.py", conFileA, dorecA)
-runrecB = recgen.MakeScript("test2B", intest, "central.e5ele.py", conFileB, dorecB)
+runrecA = recgen.MakeScript("test2A", intest, "central.e5ele.py", config, dorecA)
+runrecB = recgen.MakeScript("test2B", intest, "central.e5ele.py", config, dorecB)
 print(f"[2][Test D] Created driver scripts for reconstruction:")
 print(f"  {runrecA}")
 print(f"  {runrecB}")
@@ -134,12 +132,32 @@ print(f"      output  = {ofileA}")
 print(f"  (B) command = {doanaB}")
 print(f"      output  = {ofileB}")
 
-# and finally try to create an analysis script
+# try to create an analysis script
 runanaA = anagen.MakeScript("test2A", intest, "ElectronEnergyResolution", doanaA)
 runanaB = anagen.MakeScript("test2B", intest, "ElectronEnergyResolution", doanaB)
 print(f"[2][Test F] Created driver scripts for analysis")
 print(f"  {runanaA}")
 print(f"  {runanaB}")
+
+# create geo editors and edit a few parameters
+geditor2A = emt.GeometryEditor("../configuration/run.config", "test2A")
+geditor2B = emt.GeometryEditor("../configuration/run.config", "test2B")
+geditor2A.CopyGeoToRunDir()
+geditor2B.CopyGeoToRunDir()
+geditor2A.EditCompact(enable2, 1, "test2A")
+geditor2A.EditCompact(enable3, 0, "test2A")
+geditor2A.EditRelatedFiles(enable2, "test2A")
+geditor2A.EditRelatedFiles(enable3, "test2A")
+geditor2B.EditCompact(enable5, 1, "test2B")
+geditor2B.EditRelatedFiles(enable5, "test2B")
+
+# now create scripts to build geo & check
+# overlaps
+rungeoA = geditor2A.MakeBuildScript("test2A", config)
+rungeoB = geditor2B.MakeBuildScript("test2B", config)
+print(f"[2][Test G] Created build scripts for geometry")
+print(f"  {rungeoA}")
+print(f"  {rungeoB}")
 
 # (3) Test trial manager ------------------------------------------------------
 
