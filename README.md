@@ -112,14 +112,11 @@ machine.  You can find instructions to do so [here](https://eic.github.io/tutori
 ## Running the framework
 
 Before beginning, create a local installation of [the ePIC geometry
-description](https://github.com/eic/epic) and compile it:
+description](https://github.com/eic/epic).  Note that you **DO NOT**
+need to compile it.  This will happen automatically while running.
 ```bash
 cd <where-the-geo-goes>
 git clone git@github.com:eic/epic.git
-cd epic
-cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install
-cmake --build build
-cmake --install build
 ```
 
 Then, modify `configurations/run.config` so that the paths point to your
@@ -132,7 +129,6 @@ installations and relevent scripts, eg.
     "run_path"      : "<where-the-running-happens>",
     "log_path"      : "<where-the-logs-go>",
     "eic_shell"     : "<path-to-your-script>/eic-shell",
-    "epic_setup"    : "<where-the-geo-goes>/epic/install/bin/thisepic.sh",
     "overlap_check" : "checkOverlaps",
     "det_path"      : "<where-the-geo-goes>/epic",
     "det_config"    : "epic",
