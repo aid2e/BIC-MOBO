@@ -8,6 +8,7 @@
 # =============================================================================
 
 import os
+import pathlib
 
 from EICMOBOTestTools import ConfigParser
 from EICMOBOTestTools import FileManager
@@ -27,47 +28,6 @@ class SimGenerator:
           run: runtime configuration file
         """
         self.cfgRun = ConfigParser.ReadJsonFile(run)
-
-    def MakeOverlapCheckCommand(self, tag):
-        """MakeOverlapCheckCommand
-
-        Generates command to run overlap check
-        and exit subprocess if an overlap is
-        found.
-
-        Args:
-          tag: tag associated with current trial
-        Returns:
-          command to be run
-        """
-
-        # make sure output directory
-        # exists for trial
-        outDir = self.cfgRun["out_path"] + "/" + tag
-        FileManager.MakeDir(outDir)
-
-        # command to do overlap check
-        log = outDir + "/" + FileManager.MakeOutName("geo", tag)
-        run = self.cfgRun["overlap_check"] + " -c $DETECTOR_PATH/$DETECTOR_CONFIG.xml > " + log + " 2>&1"
-
-        # command(s) to exit if there were any overlaps
-        checks = [
-          f'grep -F "Number of illegal overlaps/extrusions : " {log} | while IFS= read -r line; do',
-          '  lastChar="${line: -1}"',
-          '  if [[ $lastChar =~ ^[0-9]$ ]]; then',
-          '    if (( lastChar > 0 )); then',
-          '      exit 9',
-          '    fi',
-          '  fi',
-          'done'
-        ]
-        #check = "\n".join(line for line in checks) + "\n"
-        check = ""
-        for line in checks:
-            check += line + "\n"
-
-        # return full command
-        return run + "\n" + check
 
     def MakeCommand(self, tag, label, path, steer, inType): 
         """MakeCommand
@@ -142,27 +102,24 @@ class SimGenerator:
         runDir = self.cfgRun["run_path"] + "/" + tag
         FileManager.MakeDir(runDir)
 
-        # construct script name
+        # construct script name + paths
         steeTag   = FileManager.ConvertSteeringToTag(steer)
         simScript = FileManager.MakeScriptName(tag, label, steeTag, "sim")
         simPath   = runDir + "/" + simScript
+        detPath   = runDir + "/" + pathlib.PurePath(self.cfgRun["det_path"]).name
 
         # make commands to set detector config
-        setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
-            self.cfgRun["epic_setup"],
-            config
+        setDet = FileManager.MakeDetSetCommands(
+            detPath,
+            config,
+            tag
         )
-
-        # make command to check overlap
-        checkOverlap = self.MakeOverlapCheckCommand(tag)
 
         # compose script
         with open(simPath, 'w') as script:
             script.write("#!/bin/bash\n\n")
             script.write("set -e\n\n")
-            script.write(setDetInstall + "\n")
-            script.write(setDetConfig + "\n\n")
-            script.write(checkOverlap + "\n\n")
+            script.write(setDet + "\n\n")
             script.write(command)
 
         # make sure script can be run
