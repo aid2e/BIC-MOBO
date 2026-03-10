@@ -28,9 +28,9 @@ if [ $# -gt 0 ]; then
       x) experiment=${OPTARG};;
     esac
   done
-  python run-bic-mobo-alt.py -r slurm -x "$experiment"
+  python run-bic-mobo.py -r slurm -x "$experiment"
 else
-  python run-bic-mobo-alt.py -r slurm
+  python run-bic-mobo.py -r slurm
 fi
 
 # end ===========================================
