@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # =============================================================================
-## @file   BICHitAngReso.py
-#  @author Derek Anderson
-#  @date   02.11.2026
+## @file    BICHitAngReso.py
+#  @authors Minho Kim,
+#           adapted by Derek Anderson
+#  @date    02.11.2026
 # -----------------------------------------------------------------------------
 ## @brief Compute angular resolution of BIC AstroPix layers. This script
 #    runs a simple calculation to compute the angular resolution of the
