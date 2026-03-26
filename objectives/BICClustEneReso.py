@@ -88,7 +88,7 @@ def CalculateClustEneReso(
     # resolution calculation --------------------------------------------------
 
     # fit spectrum with a gaussian to extract peak 
-    fres = ROOT.TF1("fEneRes", "gaus(0)", -0.5, 0.5)
+    fres = ROOT.TF1("fEneRes", "gaus(0)", -0.4, 0.1)
     fres.SetParameter(0, hres.Integral())
     fres.SetParameter(1, hres.GetMean())
     fres.SetParameter(2, hres.GetRMS())
