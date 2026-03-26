@@ -365,6 +365,10 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
     # extraction later
     otext = opts.ofile.replace(".root", ".txt")
     with open(otext, 'w') as out:
+        out.write(f"{fdiff.GetParameter(2)}\n")
+        out.write(f"{fdiff.GetParError(2)}\n")
+        out.write(f"{fdiff.GetParameter(1)}\n")
+        out.write(f"{fdiff.GetParError(1)}\n")
         out.write(f"{fwhm}\n")
 
     # and return fit width as resolution
