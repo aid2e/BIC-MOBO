@@ -74,6 +74,27 @@ def GetBody(stage, label = "", steer = ""):
     body   = sstage + slabel + ssteer
     return body
 
+def GetNewName(name, tag, ext = ".xml"):
+    """GetNewName
+
+    Helper method to add tag to provided
+    filename (usually for geometry).
+
+    Args:
+      name: name of the file to tag
+      tag:  the tag to append
+      ext:  the extension of the file
+    Returns:
+      filename with tag appended
+    """
+    newSuffix = "_aid2e_" + tag + ext
+    newName   = name
+    if  ext == "":
+        newName = name + newSuffix
+    else:
+        newName = name.replace(ext, newSuffix)
+    return newName
+
 def GetSuffix(stage, analysis = ""):
     """GetSuffix
 
@@ -149,21 +170,23 @@ def MakeScriptName(tag, label = "", steer = "", stage = "", analysis = ""):
     body = GetBody(label, steer, stage)
     return "do_aid2e_" + tag + body + ".sh"
 
-def MakeDetSetCommands(setup, config):
+def MakeDetSetCommands(detector, config, tag):
     """MakeDetSetCommands
 
     Creates commands to set relevant
     detector path and configuration.
 
     Args:
-      setup:  path to geometry installation script
-      config: name of new detector config
+      detector: path to the geometry to use
+      config:   name of new detector config
+      tag:      the tag to append
     Returns:
-      tuple of commands to set new detector path and config
+      commands to set new detector path and config as a string
     """
-    setInsall = "source " + setup
-    setConfig = "export DETECTOR_CONFIG=" + config
-    return setInsall, setConfig
+    newConfig = GetNewName(config, tag, "")
+    setInsall = "source " + detector + "/install/bin/thisepic.sh\n"
+    setConfig = "export DETECTOR_CONFIG=" + newConfig
+    return setInsall + setConfig
 
 def MakeRecSetCommands(setup):
     """MakeRecSetCommands

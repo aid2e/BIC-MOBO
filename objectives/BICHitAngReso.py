@@ -1,24 +1,16 @@
 #!/usr/bin/env python3
 # =============================================================================
-## @file   BICHitAngReso.py
-#  @author Derek Anderson
-#  @date   02.11.2026
+## @file    BICHitAngReso.py
+#  @authors Minho Kim,
+#           adapted by Derek Anderson
+#  @date    02.11.2026
 # -----------------------------------------------------------------------------
-## @brief Script to compute angular resolutions (in
-#    eta, phi, etc.) for a specified particle species
-#    from BIC imaging hits according to this algorithm:
+## @brief Compute angular resolution of BIC AstroPix layers. This script
+#    runs a simple calculation to compute the angular resolution of the
+#    BIC AstroPix (imaging) layers for a specified particle species.
 #
-#      1. Find the imaging cluster associated to thrown
-#         electron
-#      2. Locate the most energetic hit in each layer
-#         of the imaging cluster
-#      3. From these, select the hit in the most
-#         upstream layer and calculate the difference
-#         in angle
-#      4. Calculate the FWHM of the distribution
-#         of angle differences
-#
-#  @usage Example usage if executed directly:
+#  @usage Must be run inside the eic-shell. Example usage if executed
+#    directly:
 #      ./BICHitAngReso.py \
 #          -i <input file 1> -i <input file 2> ... \
 #          -o <output file> \
@@ -30,26 +22,58 @@
 #          -e <layer to exclude> -e <layer to exclude> ...
 # =============================================================================
 
-from dataclasses import dataclass
 import argparse as ap
 import numpy as np
-import ROOT
 import sys
+from dataclasses import dataclass
+from typing import Dict
 
+import ROOT
 from podio.reading import get_reader
 
-# default arguments
-IFileDefault    = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.12.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
-OFileDefault    = "test_reso.root"
-CoordDefault    = "eta"
-PDGDefault      = 11
-HitsDefault     = "EcalBarrelImagingRecHits"
-ParsDefault     = "MCParticles"
-AssocDefault    = "EcalBarrelImagingClusterAssociations"
-ExcludesDefault = list()
 
+# =============================================================================
+# Helper classes for the calculation
+# =============================================================================
 
-# utilities ===================================================================
+@dataclass
+class Options:
+    """Options for calculation
+
+    Attributes:
+        ifiles: list of input files
+        ofile: output file
+        excludes: list of layer indices to exclude
+        angle: angular coordinate to use (theta, eta, ...)
+        pdg: PDG code to use (optional)
+        hits: input reco hit collection
+        pars: input MC particle collection
+        assocs: input cluster-particle associations
+    """
+    ifiles: list[str]
+    ofile: str
+    excludes: list[int]
+    angle: str = "eta"
+    pdg: int = 11
+    hits: str = "EcalBarrelImagingRecHits"
+    pars: str = "MCParticles"
+    assocs: str = "EcalBarrelImagingClusterAssociations"
+
+    def set_opts_from_args(self, args):
+        """Set optional members from CLI arguments"""
+        self.angle  = args.angle
+        self.pdg    = args.pdg
+        self.hits   = args.hits
+        self.pars   = args.pars
+        self.assocs = args.assocs
+
+# default options
+DEFAULT_OPTS = Options(
+    ifiles = ["root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.12.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"],
+    ofile = "e-_5GeV_45to135deg.0099.angreso.hist.root",
+    excludes = [],
+)
+
 
 @dataclass
 class Info:
@@ -58,12 +82,12 @@ class Info:
     Helper class to store key information
     on hits and particles
 
-    Members:
-      energy: energy of hit/particle
-      angle:  anglular coordinate (theta, eta, ...)
-      perp:   radial coordinate (r/pt) of hit/particle
-      layer:  most upstream layer with hits
-      vector: 3D position/momentum of hit/particle
+    Attributes:
+        energy: energy of hit/particle
+        angle: anglular coordinate (theta, eta, ...)
+        perp: radial coordinate (r/pt) of hit/particle
+        layer: most upstream layer with hits
+        vector: 3D position/momentum of hit/particle
     """
     energy: float = -999.0
     angle: float = -999.0
@@ -71,14 +95,16 @@ class Info:
     layer: int = -999
     vector: ROOT.Math.XYZVector = ROOT.Math.XYZVector(-999.0, -999.0, -999.0)
 
-    def _SetVector(self, edmvec):
+    def _set_vector(self, edmvec):
+        """Set position vector from an edm4hep::Vector3f"""
         self.vector = ROOT.Math.XYZVector(
             edmvec.x,
             edmvec.y,
             edmvec.z
         )
 
-    def _SetAngle(self, coord):
+    def _set_angle(self, coord):
+        """Set angle based on provided angular coordinate name"""
         match coord:
             case "theta":
                 self.angle = self.vector.Theta()
@@ -89,62 +115,57 @@ class Info:
             case _:
                 raise ValueError("Unknown coordinate specified!")
 
-    def SetParInfo(self, cname, par):
-        self._SetVector(par.getMomentum())
-        self._SetAngle(cname)
+    def set_par_info(self, cname, par):
+        """Extract info from an edm4hep::MCParticle"""
+        self._set_vector(par.getMomentum())
+        self._set_angle(cname)
         self.energy = par.getEnergy()
         self.perp   = self.vector.Rho()
 
-    def SetHitInfo(self, cname, hit):
-        self._SetVector(hit.getPosition())
-        self._SetAngle(cname)
+    def set_hit_info(self, cname, hit):
+        """Extract info from an edm4eic::CalorimeterHit"""
+        self._set_vector(hit.getPosition())
+        self._set_angle(cname)
         self.energy = hit.getEnergy()
         self.perp   = self.vector.Rho()
         self.layer  = hit.getLayer()
 
+# =============================================================================
+# Angular Resolution Calculation
+# =============================================================================
 
-# resolution calculation ======================================================
-
-def CalculateHitAngReso(
-    ifiles    = [IFileDefault],
-    ofile     = OFileDefault,
-    coord     = CoordDefault,
-    pdg       = PDGDefault,
-    hitcoll   = HitsDefault,
-    parcoll   = ParsDefault,
-    assoccoll = AssocDefault,
-    excludes  = ExcludesDefault,
-):
-    """CalculateHitAngReso
+def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
+    """Calculate angular resolution
 
     A function to calculate angular resolution for a 
     specified species of particle from BIC imaging
     hits according to this algorithm:
 
-      1. Find the imaging cluster associated to thrown
-         electron
-      2. Locate the most energetic hit in each layer
-         of the imaging cluster
-      3. From these, select the hit in the most
-         upstream layer and calculate the difference
-         in angle
-      4. Calculate the FWHM of the distribution
-         of angle differences
+        1. Find the imaging cluster associated to thrown
+           electron
+        2. Locate the most energetic hit in each layer
+           of the imaging cluster
+        3. From these, select the hit in the most
+           upstream layer and calculate the difference
+           in angle
+        4. Fit the main peak of the distribution of
+           differences and extract the RMS of the
+           peak
+        5. Return the RMS as the resolution
 
     Args:
-      ifiles:    input file names
-      ofile:     output file name
-      coord:     coordinate to calculate resolution on
-      pdg:       PDG code of particle species
-      hitcoll:   calo reco hit collection to process
-      parcoll:   mc particle collection to process
-      assoccoll: cluster-particle associations to process
-      excludes:  list of layers to exclude
+        opts: calculation options
+
     Returns:
-      calculated resolution
+        Dictionary of {key, value} where
+        - key: the name of the objective associated with this script,
+          in this case "resolution"
+        - value: the value of the objective, in this case the RMS of
+          the fit to the mc-reco differences
     """
 
     # sanitize coordinate input
+    coord = opts.angle
     coord = coord.lower()
 
     # set up histograms, etc. -------------------------------------------------
@@ -201,22 +222,22 @@ def CalculateHitAngReso(
     # event loops -------------------------------------------------------------
 
     # loop through input files
-    for ifile in ifiles:
+    for ifile in opts.ifiles:
 
         # loop through all events
         reader = get_reader(ifile)
         for iframe, frame in enumerate(reader.get("events")):
 
             # grab relevant branches
-            rehits = frame.get(hitcoll)
-            mcpars = frame.get(parcoll)
-            assocs = frame.get(assoccoll)
+            rehits = frame.get(opts.hits)
+            mcpars = frame.get(opts.pars)
+            assocs = frame.get(opts.assocs)
 
             # pick out the primary particle
             primary = None
             for par in mcpars:
                 status = par.getGeneratorStatus()
-                if par.getPDG() == pdg and status == 1:
+                if par.getPDG() == opts.pdg and status == 1:
                     primary = par
                     break
 
@@ -228,7 +249,11 @@ def CalculateHitAngReso(
 
             # scrape particle info for histogramming
             pinfo = Info()
-            pinfo.SetParInfo(coord, primary)
+            pinfo.set_par_info(coord, primary)
+
+            # scrape particle info for histogramming
+            pinfo = Info()
+            pinfo.set_par_info(coord, primary)
             hpar.Fill(pinfo.energy)
 
             # dictionaries to keep track of max energy
@@ -282,7 +307,7 @@ def CalculateHitAngReso(
             # scrape info from max hit in most
             # upstream layer
             hinfo = Info()
-            hinfo.SetHitInfo(coord, maxhits[minlayer])
+            hinfo.set_hit_info(coord, maxhits[minlayer])
 
             # calculate difference
             hdiff.Fill(hinfo.angle - pinfo.angle)
@@ -292,10 +317,7 @@ def CalculateHitAngReso(
             hlay.Fill(minlayer)
             hmxl.Fill(minlayer, hinfo.energy)
 
-    # eff + fwhm calculation --------------------------------------------------
-
-    # calculate efficiency
-    heff.Divide(heff, hpar, 1.0, 1.0)
+    # resolution calculation --------------------------------------------------
 
     # extract hist properties to initialize fit
     muhist  = hdiff.GetMean()
@@ -328,8 +350,7 @@ def CalculateHitAngReso(
     # wrap up script ----------------------------------------------------------
 
     # save objects
-    #   - TODO automate hist saving
-    with ROOT.TFile(ofile, "recreate") as out:
+    with ROOT.TFile(opts.ofile, "recreate") as out:
         out.WriteObject(fdiff, "fAngRes")
         out.WriteObject(hdiff, "hAngRes")
         out.WriteObject(hpar, "hParEne")
@@ -342,14 +363,21 @@ def CalculateHitAngReso(
 
     # write out key info to a text file for
     # extraction later
-    otext = ofile.replace(".root", ".txt")
+    otext = opts.ofile.replace(".root", ".txt")
     with open(otext, 'w') as out:
+        out.write(f"{fdiff.GetParameter(2)}\n")
+        out.write(f"{fdiff.GetParError(2)}\n")
+        out.write(f"{fdiff.GetParameter(1)}\n")
+        out.write(f"{fdiff.GetParError(1)}\n")
         out.write(f"{fwhm}\n")
 
-    # and return fwhm as resolution
-    return fwhm
+    # and return fit width as resolution
+    return {f"{opts.angle}_resolution", fdiff.GetParameter(2)}
 
-# main ========================================================================
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
 
 if __name__ == "__main__":
 
@@ -357,55 +385,55 @@ if __name__ == "__main__":
     parser = ap.ArgumentParser()
     parser.add_argument(
         "-i",
-        "--input",
-        help = "Input file",
+        "--ifiles",
+        help = "Add an input file",
         nargs = '?',
         action = 'append',
         type = str
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--ofile",
         help = "Output file",
         nargs = '?',
-        const = OFileDefault,
-        default = OFileDefault,
+        const = DEFAULT_OPTS.ofile,
+        default = DEFAULT_OPTS.ofile,
         type = str
     )
     parser.add_argument(
         "-c",
-        "--coordinate",
-        help = "Coordinate to calculate resolution on",
+        "--angle",
+        help = "Angular coordinate to calculate resolution on",
         nargs = '?',
-        const = CoordDefault,
-        default = CoordDefault,
+        const = DEFAULT_OPTS.angle,
+        default = DEFAULT_OPTS.angle,
         type = str
     )
     parser.add_argument(
-        "-p",
+        "-s",
         "--pdg",
-        help = "PDG code to look for",
+        help = "PDG code of particle species to look for",
         nargs = '?',
-        const = PDGDefault,
-        default = PDGDefault,
+        const = DEFAULT_OPTS.pdg,
+        default = DEFAULT_OPTS.pdg,
         type = int
     )
     parser.add_argument(
         "-r",
-        "--rechits",
-        help = "Hit collection to use",
+        "--hits",
+        help = "Reco hit collection to use",
         nargs = '?',
-        const = HitsDefault,
-        default = HitsDefault,
+        const = DEFAULT_OPTS.hits,
+        default = DEFAULT_OPTS.hits,
         type = str
     )
     parser.add_argument(
-        "-m",
-        "--mcpars",
+        "-p",
+        "--pars",
         help = "MC particle collection to use",
         nargs = '?',
-        const = ParsDefault,
-        default = ParsDefault,
+        const = DEFAULT_OPTS.pars,
+        default = DEFAULT_OPTS.pars,
         type = str
     )
     parser.add_argument(
@@ -413,17 +441,15 @@ if __name__ == "__main__":
         "--assocs",
         help = "Cluster-particle associations to use",
         nargs = '?',
-        const = AssocDefault,
-        default = AssocDefault,
+        const = DEFAULT_OPTS.assocs,
+        default = DEFAULT_OPTS.assocs,
         type = str
     )
     parser.add_argument(
         "-e",
         "--excludes",
-        help = "Space separated list of layers to exclude",
+        help = "Add a layer to exclude",
         nargs = '?',
-        const = ExcludesDefault,
-        default = ExcludesDefault,
         action = 'append',
         type = int
     )
@@ -433,21 +459,21 @@ if __name__ == "__main__":
 
     # if no input files provided, use default one
     inputs = list()
-    if args.input is None:
-        inputs.append(IFileDefault)
+    if args.ifiles is None:
+        inputs.append(DEFAULT_OPTS.ifiles)
     else:
-        inputs.extend(args.input)
+        inputs.extend(args.ifiles)
 
-    # run analysis
-    CalculateHitAngReso(
-        inputs,
-        args.output,
-        args.coordinate,
-        args.pdg,
-        args.rechits,
-        args.mcpars,
-        args.assocs,
-        args.excludes
-    )
+    # if no excluded layers provided, use default one
+    excludes = list()
+    if args.excludes is None:
+        excludes.append(DEFAULT_OPTS.excludes)
+    else:
+        excludes.extend(args.excludes)
+
+    # pack options and run analysis
+    opts = Options(inputs, args.ofile, excludes)
+    opts.set_opts_from_args(args)
+    CalculateHitAngReso(opts)
 
 # end =========================================================================

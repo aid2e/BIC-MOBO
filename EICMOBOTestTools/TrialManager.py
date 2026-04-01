@@ -40,14 +40,14 @@ class TrialManager:
           ana: objectives configuration file
           tag: tag to use for trial
         """
+        self.tag     = self.__MakeTimeTag() if tag == None else tag
         self.cfgRun  = ConfigParser.ReadJsonFile(run)
         self.cfgPar  = ConfigParser.ReadJsonFile(par)
         self.cfgAna  = ConfigParser.ReadJsonFile(ana)
-        self.geoEdit = GeometryEditor(run)
+        self.geoEdit = GeometryEditor(run, self.tag)
         self.simGen  = SimGenerator(run)
         self.recGen  = RecGenerator(run)
         self.anaGen  = AnaGenerator(run, ana)
-        self.tag     = self.__MakeTimeTag() if tag == None else tag
 
     def __MakeTimeTag(self):
        """MakeTimeTag
@@ -69,10 +69,9 @@ class TrialManager:
 
         Args:
           params: dictionary of parameter names and current values (eg. from Ax)
-        Returns:
-          name of new epic config file
         """
         trialConfig = ""
+        self.geoEdit.CopyGeoToRunDir()
         for par, value in params.items():
             cfg = self.cfgPar["parameters"][par]
             if cfg["stage"] != "sim":
@@ -80,9 +79,6 @@ class TrialManager:
             else:
                 self.geoEdit.EditCompact(cfg, value, self.tag)
                 self.geoEdit.EditRelatedFiles(cfg, self.tag)
-
-        # return name of new config file
-        return trialConfig
 
     def __SetRecoArgs(self, params):
         """SetRecoArgs
@@ -120,16 +116,29 @@ class TrialManager:
         self.__DoGeometryEdits(params)
         self.__SetRecoArgs(params)
 
+        # create command to recompile geo
+        recompGeo = self.geoEdit.MakeGeoRecompileCommand()
+        commands  = [recompGeo]
+
+        # if using default config, create modified
+        # config with compacts updated
+        if self.cfgRun["det_config"] == "epic":
+            commands.append(
+                self.geoEdit.MakeConfigCopyCommand(self.tag)
+            )
+
         # create commands to set detector path, config
-        setDetInstall, setDetConfig = FileManager.MakeDetSetCommands(
-            self.cfgRun["epic_setup"],
-            self.cfgRun["det_config"]
+        commands.append(
+            FileManager.MakeDetSetCommands(
+                self.geoEdit.detPath,
+                self.cfgRun["det_config"],
+                self.tag
+            )
         )
-        commands = [setDetInstall, setDetConfig]
 
         # check for overlaps
         commands.append(
-            self.simGen.MakeOverlapCheckCommand(self.tag)
+            self.geoEdit.MakeOverlapCheckCommand(self.tag)
         )
 
         # if an eicrecon installation is specified,
