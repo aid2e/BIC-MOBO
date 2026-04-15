@@ -41,23 +41,23 @@ class Options:
     """Options for calculation
 
     Attributes:
-        ifiles: list of input files
-        ofile: output file
+        ifiles:   list of input files
+        ofile:    output file
         excludes: list of layer indices to exclude
-        angle: angular coordinate to use (theta, eta, ...)
-        pdg: PDG code to use (optional)
-        hits: input reco hit collection
-        pars: input MC particle collection
-        assocs: input cluster-particle associations
+        angle:    angular coordinate to use (theta, eta, ...)
+        pdg:      PDG code to use (optional)
+        hits:     input reco hit collection
+        pars:     input MC particle collection
+        assocs:   input cluster-particle associations
     """
-    ifiles: list[str]
-    ofile: str
+    ifiles:   list[str]
+    ofile:    str
     excludes: list[int]
-    angle: str = "eta"
-    pdg: int = 11
-    hits: str = "EcalBarrelImagingRecHits"
-    pars: str = "MCParticles"
-    assocs: str = "EcalBarrelImagingClusterAssociations"
+    angle:    str = "eta"
+    pdg:      int = 11
+    hits:     str = "EcalBarrelImagingRecHits"
+    pars:     str = "MCParticles"
+    assocs:   str = "EcalBarrelImagingClusterAssociations"
 
     def set_opts_from_args(self, args):
         """Set optional members from CLI arguments"""
@@ -69,8 +69,10 @@ class Options:
 
 # default options
 DEFAULT_OPTS = Options(
-    ifiles = ["root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.12.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"],
-    ofile = "e-_5GeV_45to135deg.0099.angreso.hist.root",
+    ifiles = [
+        "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.12.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
+    ],
+    ofile    = "e-_5GeV_45to135deg.0099.angreso.hist.root",
     excludes = [],
 )
 
@@ -84,15 +86,17 @@ class Info:
 
     Attributes:
         energy: energy of hit/particle
-        angle: anglular coordinate (theta, eta, ...)
-        perp: radial coordinate (r/pt) of hit/particle
-        layer: most upstream layer with hits
+        angle:  anglular coordinate (theta, eta, ...)
+        perp:   radial coordinate (r/pt) of hit/particle
+        layer:  most upstream layer with hits
+        pdg:    PDG code of particle
         vector: 3D position/momentum of hit/particle
     """
     energy: float = -999.0
-    angle: float = -999.0
-    perp: float = -999.0
-    layer: int = -999
+    angle:  float = -999.0
+    perp:   float = -999.0
+    layer:  int   = -999
+    pdg:    int   = 0
     vector: ROOT.Math.XYZVector = ROOT.Math.XYZVector(-999.0, -999.0, -999.0)
 
     def _set_vector(self, edmvec):
@@ -121,6 +125,7 @@ class Info:
         self._set_angle(cname)
         self.energy = par.getEnergy()
         self.perp   = self.vector.Rho()
+        self.pdg    = par.getPDG()
 
     def set_hit_info(self, cname, hit):
         """Extract info from an edm4eic::CalorimeterHit"""
@@ -238,7 +243,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
             for par in mcpars:
                 status = par.getGeneratorStatus()
                 if par.getPDG() == opts.pdg and status == 1:
-                    primary = par
+                   primary = par
                     break
 
             # if for some reason no primary was found,
@@ -246,10 +251,6 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
             if primary is None:
                 print(f"Warning! Frame {iframe} has no primary in file:\n  -- {ifile}")
                 continue
-
-            # scrape particle info for histogramming
-            pinfo = Info()
-            pinfo.set_par_info(coord, primary)
 
             # scrape particle info for histogramming
             pinfo = Info()
