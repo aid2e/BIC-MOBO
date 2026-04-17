@@ -25,8 +25,8 @@
 import argparse as ap
 import numpy as np
 import sys
-from dataclasses import dataclass
-from typing import Dict
+from dataclasses import dataclass, field
+from typing import Any, Dict
 
 import ROOT
 from podio.reading import get_reader
@@ -70,9 +70,9 @@ class Options:
 # default options
 DEFAULT_OPTS = Options(
     ifiles = [
-        "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.12.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
+        "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/26.02.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0039.eicrecon.edm4eic.root",
     ],
-    ofile    = "e-_5GeV_45to135deg.0099.angreso.hist.root",
+    ofile    = "e-_5GeV_45to135deg.angreso.hist.root",
     excludes = [],
 )
 
@@ -153,19 +153,25 @@ class Hists:
         hists: dictionary of histograms
         bins:  dictionary of binning schemes
     """
-    tag:   str
-    coord: str
+    tag:   str = None
+    coord: str = None
     hists: Dict[str, Any] = field(default_factory = dict)
     bins:  Dict[str, Any] = field(default_factory = dict)
 
     def _make_hist_1D(self, name, xbin, title = ""):
         """Make a 1D histogram"""
-        return ROOT.TH1D(f"{name}_{self.tag}", title, self.bins[xbin][0], self.bins[xbin][1], self.bins[xbin][2])
+        tag = f"_{self.tag}"
+        if self.tag is None:
+            tag = ""
+        return ROOT.TH1D(f"{name}{tag}", title, self.bins[xbin][0], self.bins[xbin][1], self.bins[xbin][2])
 
     def _make_hist_2D(self, name, xbin, ybin, title = ""):
         """Make a 2D histogram"""
+        tag = f"_{self.tag}"
+        if self.tag is None:
+            tag = ""
         return ROOT.TH2D(
-            f"{name}_{self.tag}",
+            f"{name}{tag}",
             title,
             self.bins[xbin][0],
             self.bins[xbin][1],
@@ -182,9 +188,9 @@ class Hists:
         self.bins["eta"] = (80, -4.0, 4.0)
         self.bins["phi"] = (180, -3.15, 3.15)
         self.bins["the"] = (180, -3.15, 3.15)
-        self.bins["xy"]  = (1500 -1500.0, 1500.0)
+        self.bins["xy"]  = (1500, -1500.0, 1500.0)
         self.bins["zed"] = (3000, -3000.0, 3000.0)
-        self.bins["rad"] = (775, -50.0, 1500.0
+        self.bins["rad"] = (775, -50.0, 1500.0)
         self.bins["lay"] = (8, -0.5, 7.5)
         self.bins["eff"] = (200, 0.0, 2.0)
         self.bins["res"] = (80, -0.2, 0.2)
@@ -192,24 +198,15 @@ class Hists:
     def _define_hists(self):
         """Define dictionary of histograms"""
 
-        # select relevant binning for coordinate
-        angle = None
-        match coord:
-            case "theta":
-                angle = "the"
-            case "eta":
-                angle = "eta"
-            case "phi":
-                angle = "phi"
-            case _:
-                raise ValueError("Unknown coordinate specified!")
+        # select relevant binning scheme for angle
+        angle = self.get_angle_bin()
 
         # particle histograms
         self.hists["emc"]   = self._make_hist_1D("hParEne", "ene")
         self.hists["hmc"]   = self._make_hist_1D("hParEta", "eta")
         self.hists["amc"]   = self._make_hist_1D("hParAng", angle)
-        self.hists["exhmc"] = self._make_hist_1D("hParEneVsEta", "eta", "ene")
-        self.hists["examc"] = self._make_hist_1D("hParEneVsAng", angle, "ene")
+        self.hists["exhmc"] = self._make_hist_2D("hParEneVsEta", "eta", "ene")
+        self.hists["examc"] = self._make_hist_2D("hParEneVsAng", angle, "ene")
 
         # cluster histograms
         self.hists["eclu"] = self._make_hist_1D("hClustEne", "ene")
@@ -221,36 +218,35 @@ class Hists:
         self.hists["zima"]   = self._make_hist_1D("hAllImageZ", "zed")
         self.hists["aima"]   = self._make_hist_1D("hAllImageAng", angle)
         self.hists["lima"]   = self._make_hist_1D("hAllImageLayer", "lay")
-        self.hists["exhima"] = self._make_hist_1D("hAllImageEneVsEta", "eta", "hit")
-        self.hists["exrima"] = self._make_hist_1D("hAllImageEneVsRad", "rad", "hit")
-        self.hists["exlima"] = self._make_hist_1D("hAllImageEneVsLayer", "lay", "hit")
-        self.hists["exaima"] = self._make_hist_1D("hAllImageEneVsAng",angle, "hit")
-        self.hists["yxxima"] = self._make_hist_1D("hAllImageYVsX", "xy", "xy")
-        self.hists["rxzima"] = self._make_hist_1D("hAllImageRVsZ", "zed", "rad")
-        self.hists["axlima"] = self._make_hist_1D("hAllImageAngVsLayer", "lay", angle)
+        self.hists["exhima"] = self._make_hist_2D("hAllImageEneVsEta", "eta", "hit")
+        self.hists["exrima"] = self._make_hist_2D("hAllImageEneVsRad", "rad", "hit")
+        self.hists["exaima"] = self._make_hist_2D("hAllImageEneVsAng",angle, "hit")
+        self.hists["exlima"] = self._make_hist_2D("hAllImageEneVsLayer", "lay", "hit")
+        self.hists["yxxima"] = self._make_hist_2D("hAllImageYVsX", "xy", "xy")
+        self.hists["rxzima"] = self._make_hist_2D("hAllImageRVsZ", "zed", "rad")
+        self.hists["axlima"] = self._make_hist_2D("hAllImageAngVsLayer", "lay", angle)
 
-        # max hit histograms
+        # max hit histograms (event level)
         self.hists["emax"]   = self._make_hist_1D("hMaxImageEne", "hit")
         self.hists["hmax"]   = self._make_hist_1D("hMaxImageEta", "eta")
         self.hists["rmax"]   = self._make_hist_1D("hMaxImageR", "rad")
         self.hists["zmax"]   = self._make_hist_1D("hMaxImageZ", "zed")
         self.hists["amax"]   = self._make_hist_1D("hMaxImageAng", angle)
         self.hists["lmax"]   = self._make_hist_1D("hMaxImageLayer", "lay")
-        self.hists["exhmax"] = self._make_hist_1D("hMaxImageEneVsEta", "eta", "hit")
-        self.hists["exrmax"] = self._make_hist_1D("hMaxImageEneVsRad", "rad", "hit")
-        self.hists["examax"] = self._make_hist_1D("hMaxImageEneVsAng", "ang", "hit")
-        self.hists["yxxmax"] = self._make_hist_1D("hMaxImageYVsX", "xy", "xy")
-        self.hists["rxzmax"] = self._make_hist_1D("hMaxImageRVsZ", "zed", "rad")
-
-        # event histograms
-        self.hists["maxe"] = self._make_hist_1D("hEvtMaxImageEne", "hit")
-        self.hists["minl"] = self._make_hist_1D("hEvtMinLayer", "lay")
+        self.hists["exhmax"] = self._make_hist_2D("hMaxImageEneVsEta", "eta", "hit")
+        self.hists["exrmax"] = self._make_hist_2D("hMaxImageEneVsRad", "rad", "hit")
+        self.hists["examax"] = self._make_hist_2D("hMaxImageEneVsAng", angle, "hit")
+        self.hists["exlmax"] = self._make_hist_2D("hMaxImageEneVsLayer", "lay", "ene")
+        self.hists["yxxmax"] = self._make_hist_2D("hMaxImageYVsX", "xy", "xy")
+        self.hists["rxzmax"] = self._make_hist_2D("hMaxImageRVsZ", "zed", "rad")
+        self.hists["axlmax"] = self._make_hist_2D("hMaxImageAngVsLayer", "lay", angle)
 
         # objective histograms
-        self.hists["eeff"]  = self._make_hist_1D("hEffEne", "ene")
-        self.hists["heff"]  = self._make_hist_1D("hEffEta", "eta")
-        self.hists["ares"]  = self._make_hist_1D("hAngRes", "res")
-        self.hists["resxl"] = self._make_hist_1D("hAngResVsMaxHitLayer", "lay", "res")
+        self.hists["eeff"]   = self._make_hist_1D("hEffEne", "ene")
+        self.hists["heff"]   = self._make_hist_1D("hEffEta", "eta")
+        self.hists["ares"]   = self._make_hist_1D("hAngRes", "res")
+        self.hists["resxl"]  = self._make_hist_2D("hAngResVsMaxHitLayer", "lay", "res")
+        self.hists["resxpe"] = self._make_hist_2D("hAngResVsParEne", "ene", "res")
 
         # TODO add efficiency * reso histogram
 
@@ -267,7 +263,22 @@ class Hists:
             file.WriteObject(hist)
 
     def get(self, key):
+        """Get a particular histogram by key"""
         return self.hists[key]
+
+    def get_angle_bin(self):
+        """Get key of binning scheme for a provided coordinate"""
+        key = None
+        match self.coord:
+            case "theta":
+                key = "the"
+            case "eta":
+                key = "eta"
+            case "phi":
+                key = "phi"
+            case _:
+                raise ValueError("Unknown coordinate specified!")
+        return key
 
 # =============================================================================
 # Angular Resolution Calculation
@@ -322,7 +333,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
             raise ValueError("Unknown coordinate specified!")
 
     # create histograms
-    hist = Hists(str(opts.pdg).replace("-", "M"))
+    hist = Hists(coord = coord)
     hist.create()
 
     # event loops -------------------------------------------------------------
@@ -344,7 +355,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
             for par in mcpars:
                 status = par.getGeneratorStatus()
                 if par.getPDG() == opts.pdg and status == 1:
-                   primary = par
+                    primary = par
                     break
 
             # if for some reason no primary was found,
@@ -356,7 +367,11 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
             # scrape particle info for histogramming
             pinfo = Info()
             pinfo.set_par_info(coord, primary)
-            hpar.Fill(pinfo.energy)
+            hist.get("emc").Fill(pinfo.energy)
+            hist.get("hmc").Fill(pinfo.get_angle("eta"))
+            hist.get("amc").Fill(pinfo.angle)
+            hist.get("exhmc").Fill(pinfo.get_angle("eta"), pinfo.energy)
+            hist.get("examc").Fill(pinfo.angle, pinfo.energy)
 
             # dictionaries to keep track of max energy
             # hits in each layer
@@ -391,6 +406,23 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
                     if layer in excludes:
                         continue
 
+                    # scrape hit info for histogramming
+                    hinfo = Info()
+                    hinfo.set_hit_info(coord, hit)
+                    hist.get("eima").Fill(hinfo.energy)
+                    hist.get("hima").Fill(hinfo.get_angle("eta"))
+                    hist.get("rima").Fill(hinfo.perp)
+                    hist.get("zima").Fill(hinfo.vector.Z())
+                    hist.get("aima").Fill(hinfo.angle)
+                    hist.get("lima").Fill(hinfo.layer)
+                    hist.get("exhima").Fill(hinfo.get_angle("eta"), hinfo.energy)
+                    hist.get("exrima").Fill(hinfo.perp, hinfo.energy)
+                    hist.get("exaima").Fill(hinfo.angle, hinfo.energy)
+                    hist.get("exlima").Fill(hinfo.layer, hinfo.energy)
+                    hist.get("yxxima").Fill(hinfo.vector.X(), hinfo.vector.Y())
+                    hist.get("rxzima").Fill(hinfo.vector.Z(), hinfo.perp)
+                    hist.get("axlima").Fill(hinfo.layer, hinfo.angle)
+
                     if hit.getEnergy() > maxenes[layer]:
                         maxenes[layer] = hit.getEnergy()
                         maxhits[layer] = hit
@@ -399,36 +431,50 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
                 continue
 
             # fill hists for efficiency
-            heff.Fill(pinfo.energy)
-            hclust.Fill(cluster.getEnergy())
+            hist.get("eeff").Fill(pinfo.energy)
+            hist.get("heff").Fill(pinfo.get_angle("eta"))
+            hist.get("eclu").Fill(cluster.getEnergy())
 
             # pick out most upstream layer from
             # most energetic hits
             minlayer = min(maxhits.keys())
 
             # scrape info from max hit in most
-            # upstream layer
-            hinfo = Info()
-            hinfo.set_hit_info(coord, maxhits[minlayer])
+            # upstream layer, fill hists
+            minfo = Info()
+            minfo.set_hit_info(coord, maxhits[minlayer])
+            hist.get("emax").Fill(minfo.energy)
+            hist.get("hmax").Fill(minfo.get_angle("eta"))
+            hist.get("rmax").Fill(minfo.perp)
+            hist.get("zmax").Fill(minfo.vector.Z())
+            hist.get("amax").Fill(minfo.angle)
+            hist.get("lmax").Fill(minfo.layer)
+            hist.get("exhmax").Fill(minfo.get_angle("eta"), minfo.energy)
+            hist.get("exrmax").Fill(minfo.perp, minfo.energy)
+            hist.get("examax").Fill(minfo.angle, minfo.energy)
+            hist.get("exlmax").Fill(minfo.layer, minfo.energy)
+            hist.get("yxxmax").Fill(minfo.vector.X(), minfo.vector.Y())
+            hist.get("rxzmax").Fill(minfo.vector.Z(), minfo.perp)
+            hist.get("axlmax").Fill(minfo.layer, minfo.angle)
 
             # calculate difference
-            hdiff.Fill(hinfo.angle - pinfo.angle)
+            diff = minfo.angle - pinfo.angle
 
-            # fill hists
-            hmax.Fill(hinfo.energy)
-            hlay.Fill(minlayer)
-            hmxl.Fill(minlayer, hinfo.energy)
+            # fill other event histograms
+            hist.get("ares").Fill(diff)
+            hist.get("resxl").Fill(minfo.layer, diff)
+            hist.get("resxpe").Fill(pinfo.energy, diff)
 
     # resolution calculation --------------------------------------------------
 
     # extract hist properties to initialize fit
-    muhist  = hdiff.GetMean()
-    rmshist = hdiff.GetRMS()
-    inthist = hdiff.Integral()
+    muhist  = hist.get("ares").GetMean()
+    rmshist = hist.get("ares").GetRMS()
+    inthist = hist.get("ares").Integral()
 
     # set up a gaussian to extract main peak
-    #   - FIXME func range should be tied to hist range
-    fdiff = ROOT.TF1("fAngRes", "gaus(0)", -0.2, 0.2)
+    angle = hist.get_angle_bin()
+    fdiff = ROOT.TF1("fAngRes", "gaus(0)", hist.bins[angle][1], hist.bins[angle][2])
     fdiff.SetParameters(
         inthist,
         muhist,
@@ -436,11 +482,11 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
     )
 
     # fit histogram over nonzero bins
-    ifirst   = hdiff.FindFirstBinAbove(0.0)
-    ilast    = hdiff.FindLastBinAbove(0.0)
-    first_lo = hdiff.GetBinLowEdge(ifirst)
-    last_hi  = hdiff.GetBinLowEdge(ilast + 1)
-    hdiff.Fit("fAngRes", "", "", first_lo, last_hi)
+    ifirst   = hist.get("ares").FindFirstBinAbove(0.0)
+    ilast    = hist.get("ares").FindLastBinAbove(0.0)
+    first_lo = hist.get("ares").GetBinLowEdge(ifirst)
+    last_hi  = hist.get("ares").GetBinLowEdge(ilast + 1)
+    hist.get("ares").Fit("fAngRes", "", "", first_lo, last_hi)
 
     # calculate full-width-half-max
     mumain     = fdiff.GetParameter(1)
