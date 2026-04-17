@@ -243,6 +243,7 @@ class Hists:
             file.WriteObject(hist)
 
     def get(self, key):
+        """Get a particular histogram by key"""
         return self.hists[key]
 
 
