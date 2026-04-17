@@ -7,7 +7,9 @@
 #    trial manager.
 # =============================================================================
 
-import argparse
+import argparse as ap
+import json
+
 
 def RunObjectives(tag = None, **kwargs):
     """RunObjectives
@@ -48,16 +50,16 @@ def RunObjectives(tag = None, **kwargs):
     oFiles = trial.DoTrial(kwargs)
 
     # extract relevant objectives
-    #   --> (should be 1st line in associated
-    #       text files)
+    #   --> (should be in associated
+    #       json files)
     objectives = dict()
     for obj, file in oFiles.items():
-        oTxt = file.replace(".root", ".txt")
-        oVal = None
-        if os.path.isfile(oTxt):
-            with open(oTxt, 'r') as out:
-                oDat = out.readlines()
-                oVal = float(oDat[0])
+        oJson = file.replace(".root", ".json")
+        oVal  = None
+        if os.path.isfile(oJson):
+            with open(oJson, 'r') as out:
+                oDat = json.load(out)
+                oVal = oDat[obj]
             objectives[obj] = oVal
 
     # if needed, calculate cost
@@ -77,7 +79,7 @@ def RunObjectives(tag = None, **kwargs):
 if __name__ == "__main__":
 
     # parse keyword arguments
-    parser = argparse.ArgumentParser()
+    parser = ap.ArgumentParser()
     parser.add_argument("--tag", "--tag", help = "Trial tag", type = str, default = None)
     parser.add_argument("--enable_staves_2", "--enable_staves_2", help = "Stave 2 value", type = int)
     parser.add_argument("--enable_staves_3", "--enable_staves_3", help = "Stave 3 value", type = int)

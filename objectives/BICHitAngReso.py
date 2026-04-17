@@ -23,6 +23,7 @@
 # =============================================================================
 
 import argparse as ap
+import json
 import numpy as np
 import sys
 from dataclasses import dataclass, field
@@ -495,6 +496,15 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
     halfmax_hi = fdiff.GetX(maximum / 2.0, mumain, last_hi)
     fwhm       = halfmax_hi - halfmax_lo
 
+    # store output to dump later
+    output = {
+        "reso_fit_sigma"     : fdiff.GetParameter(2),
+        "reso_fit_sigma_err" : fdiff.GetParError(2),
+        "reso_fit_mean"      : fdiff.GetParameter(1),
+        "reso_fit_mean_err"  : fdiff.GetParError(1),
+        "reso_fit_fwhm"      : fwhm,
+    }
+
     # wrap up script ----------------------------------------------------------
 
     # save objects
@@ -502,18 +512,18 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
         hist.save(out)
         out.Close()
 
-    # write out key info to a text file for
-    # extraction later
-    otext = opts.ofile.replace(".root", ".txt")
-    with open(otext, 'w') as out:
-        out.write(f"{fdiff.GetParameter(2)}\n")
-        out.write(f"{fdiff.GetParError(2)}\n")
-        out.write(f"{fdiff.GetParameter(1)}\n")
-        out.write(f"{fdiff.GetParError(1)}\n")
-        out.write(f"{fwhm}\n")
+    # extract specific objective(s) to return
+    objectives = {
+        f"{opts.angle}_resolution" : output["reso_fit_sigma"]
+    }
+
+    ojson = opts.ofile.replace(".root", ".json")
+    with open(ojson, 'w') as out:
+        odata = output | objectives
+        json.dump(odata, out)
 
     # and return fit width as resolution
-    return {f"{opts.angle}_resolution", fdiff.GetParameter(2)}
+    return objectives
 
 
 # =============================================================================

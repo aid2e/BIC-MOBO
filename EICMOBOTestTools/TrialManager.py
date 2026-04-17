@@ -8,9 +8,10 @@
 # =============================================================================
 
 import datetime
+import json
+import os
 import pathlib
 import re
-import os
 import subprocess
 
 from EICMOBOTestTools import AnaGenerator
@@ -271,14 +272,14 @@ class TrialManager:
         #       threshold
         for anaKey, anaOut in outFiles.items():
             anaPath = pathlib.Path(anaOut)
-            anaTxt  = anaPath.with_suffix('.txt')
-            with open(anaTxt, 'a+') as txt:
+            anaJson = anaPath.with_suffix('.json')
+            with open(anaJson, 'r+') as anaj:
+                anaDat = json
                 if process.returncode == 9:
-                    dum = self.anaGen.GetDummyValue(anaKey)
-                    txt.write(f"{dum}")
-                for parKey, parVal in param.items():
-                    txt.write("\n")
-                    txt.write(f"{parVal}")
+                    anaDat[anaKey] = self.anaGen.GetDummyValue(anaKey)
+                outDat = anaDat | param
+                anaj.seek(0)
+                json.dump(outDat, anaj)
 
         # return relevant output files
         return outFiles

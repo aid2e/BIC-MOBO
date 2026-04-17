@@ -16,6 +16,7 @@
 # =============================================================================
 
 import argparse as ap
+import json
 import numpy as np
 import ROOT
 import sys
@@ -23,8 +24,8 @@ import sys
 from podio.reading import get_reader
 
 # default arguments
-IFileDefault  = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root"
-OFileDefault  = "test_reso.root"
+IFileDefault  = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/26.02.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0039.eicrecon.edm4eic.root",
+OFileDefault  = "e-_5GeV_45to135deg.0039.enereso.hist.root"
 PDGDefault    = 11
 BranchDefault = "EcalBarrelClusterAssociations"
 
@@ -94,6 +95,14 @@ def CalculateClustEneReso(
     fres.SetParameter(2, hres.GetRMS())
     hres.Fit(fres, "r")
 
+    # store output to dump later
+    output = {
+        "reso_fit_sigma"     : fres.GetParameter(2),
+        "reso_fit_sigma_err" : fres.GetParError(2),
+        "reso_fit_mean"      : fres.GetParameter(1),
+        "reso_fit_mean_err"  : fres.GetParError(1),
+    }
+
     # wrap up script ----------------------------------------------------------
 
     # save objects
@@ -102,22 +111,18 @@ def CalculateClustEneReso(
         out.WriteObject(fres, "fEneRes")
         out.Close()
 
-    # grab objective and other info
-    reso = fres.GetParameter(2)
-    eres = fres.GetParError(2)
-    mean = fres.GetParameter(1)
-    emea = fres.GetParError(1)
+    # extract specific objective(s) to return
+    objectives = {
+        "energy_resolution" : output["reso_fit_sigma"]
+    }
 
-    # write them out to a text file for extraction later
-    otext = ofile.replace(".root", ".txt")
-    with open(otext, 'w') as out:
-        out.write(f"{reso}\n")
-        out.write(f"{eres}\n")
-        out.write(f"{mean}\n")
-        out.write(f"{emea}")
+    ojson = ofile.replace(".root", ".json")
+    with open(ojson, 'w') as out:
+        odata = output | objectives
+        json.dump(odata, out)
 
     # and return calculated resolution
-    return fres.GetParameter(2)
+    return objectives
 
 # main ========================================================================
 
