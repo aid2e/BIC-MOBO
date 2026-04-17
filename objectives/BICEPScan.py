@@ -83,7 +83,6 @@ DEFAULT_OPTS = Options(
 )
 
 
-
 @dataclass
 class Info:
     """Hit and Particle Info
@@ -461,6 +460,7 @@ def DoEPScan(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
     with ROOT.TFile(opts.ofile, "recreate") as out:
         for hist in hists.values():
             hist.save(out)
+        out.Close()
 
     # extract specific objective(s) to return
     objectives = {
