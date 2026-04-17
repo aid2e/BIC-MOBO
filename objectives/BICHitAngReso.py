@@ -85,18 +85,20 @@ class Info:
     on hits and particles
 
     Attributes:
-        energy: energy of hit/particle
-        angle:  anglular coordinate (theta, eta, ...)
-        perp:   radial coordinate (r/pt) of hit/particle
-        layer:  most upstream layer with hits
-        pdg:    PDG code of particle
-        vector: 3D position/momentum of hit/particle
+        magnitude: magnitude of position/momentum of hit/particle
+        energy:    energy of hit/particle
+        angle:     angular coordinate (theta, eta, ...)
+        perp:      radial coordinate (r/pt) of hit/particle
+        layer:     layer of hit
+        pdg:       PDG code of particle
+        vector:    3D position/momentum of hit/particle
     """
-    energy: float = -999.0
-    angle:  float = -999.0
-    perp:   float = -999.0
-    layer:  int   = -999
-    pdg:    int   = 0
+    magnitude: float = -999.0
+    energy:    float = -999.0
+    angle:     float = -999.0
+    perp:      float = -999.0
+    layer:     int   = -999
+    pdg:       int   = 0
     vector: ROOT.Math.XYZVector = ROOT.Math.XYZVector(-999.0, -999.0, -999.0)
 
     def _set_vector(self, edmvec):
@@ -106,34 +108,166 @@ class Info:
             edmvec.y,
             edmvec.z
         )
-
-    def _set_angle(self, coord):
-        """Set angle based on provided angular coordinate name"""
-        match coord:
-            case "theta":
-                self.angle = self.vector.Theta()
-            case "eta":
-                self.angle = self.vector.Eta()
-            case "phi":
-                self.angle = self.vector.Phi()
-            case _:
-                raise ValueError("Unknown coordinate specified!")
+        self.magnitude = np.sqrt(self.vector.Mag2())
+        self.perp      = self.vector.Rho()
 
     def set_par_info(self, cname, par):
         """Extract info from an edm4hep::MCParticle"""
         self._set_vector(par.getMomentum())
-        self._set_angle(cname)
         self.energy = par.getEnergy()
-        self.perp   = self.vector.Rho()
+        self.angle  = self.get_angle(cname)
         self.pdg    = par.getPDG()
 
     def set_hit_info(self, cname, hit):
         """Extract info from an edm4eic::CalorimeterHit"""
         self._set_vector(hit.getPosition())
-        self._set_angle(cname)
         self.energy = hit.getEnergy()
-        self.perp   = self.vector.Rho()
+        self.angle  = self.get_angle(cname)
         self.layer  = hit.getLayer()
+
+    def get_angle(self, coord) -> float:
+        """Get angle based on provided angular coordinate name"""
+        angle = -999.0
+        match coord:
+            case "theta":
+                angle = self.vector.Theta()
+            case "eta":
+                angle = self.vector.Eta()
+            case "phi":
+                angle = self.vector.Phi()
+            case _:
+                raise ValueError("Unknown coordinate specified!")
+        return angle
+
+
+@dataclass
+class Hists:
+    """Histograms
+
+    Helper class to store and manage
+    output histograms
+
+    Attributes:
+        tag:   label to append to histogram names
+        coord: angular coordinate (theta, eta, ...)
+        hists: dictionary of histograms
+        bins:  dictionary of binning schemes
+    """
+    tag:   str
+    coord: str
+    hists: Dict[str, Any] = field(default_factory = dict)
+    bins:  Dict[str, Any] = field(default_factory = dict)
+
+    def _make_hist_1D(self, name, xbin, title = ""):
+        """Make a 1D histogram"""
+        return ROOT.TH1D(f"{name}_{self.tag}", title, self.bins[xbin][0], self.bins[xbin][1], self.bins[xbin][2])
+
+    def _make_hist_2D(self, name, xbin, ybin, title = ""):
+        """Make a 2D histogram"""
+        return ROOT.TH2D(
+            f"{name}_{self.tag}",
+            title,
+            self.bins[xbin][0],
+            self.bins[xbin][1],
+            self.bins[xbin][2],
+            self.bins[ybin][0],
+            self.bins[ybin][1],
+            self.bins[ybin][2]
+        )
+
+    def _define_bins(self):
+        """Define dictionary of bins"""
+        self.bins["ene"] = (42, -1.0, 20.0)
+        self.bins["hit"] = (100, -0.5, 4.5)
+        self.bins["eta"] = (80, -4.0, 4.0)
+        self.bins["phi"] = (180, -3.15, 3.15)
+        self.bins["the"] = (180, -3.15, 3.15)
+        self.bins["xy"]  = (1500 -1500.0, 1500.0)
+        self.bins["zed"] = (3000, -3000.0, 3000.0)
+        self.bins["rad"] = (775, -50.0, 1500.0
+        self.bins["lay"] = (8, -0.5, 7.5)
+        self.bins["eff"] = (200, 0.0, 2.0)
+        self.bins["res"] = (80, -0.2, 0.2)
+
+    def _define_hists(self):
+        """Define dictionary of histograms"""
+
+        # select relevant binning for coordinate
+        angle = None
+        match coord:
+            case "theta":
+                angle = "the"
+            case "eta":
+                angle = "eta"
+            case "phi":
+                angle = "phi"
+            case _:
+                raise ValueError("Unknown coordinate specified!")
+
+        # particle histograms
+        self.hists["emc"]   = self._make_hist_1D("hParEne", "ene")
+        self.hists["hmc"]   = self._make_hist_1D("hParEta", "eta")
+        self.hists["amc"]   = self._make_hist_1D("hParAng", angle)
+        self.hists["exhmc"] = self._make_hist_1D("hParEneVsEta", "eta", "ene")
+        self.hists["examc"] = self._make_hist_1D("hParEneVsAng", angle, "ene")
+
+        # cluster histograms
+        self.hists["eclu"] = self._make_hist_1D("hClustEne", "ene")
+
+        # all hit histograms
+        self.hists["eima"]   = self._make_hist_1D("hAllImageEne", "hit")
+        self.hists["hima"]   = self._make_hist_1D("hAllImageEta", "eta")
+        self.hists["rima"]   = self._make_hist_1D("hAllImageR", "rad")
+        self.hists["zima"]   = self._make_hist_1D("hAllImageZ", "zed")
+        self.hists["aima"]   = self._make_hist_1D("hAllImageAng", angle)
+        self.hists["lima"]   = self._make_hist_1D("hAllImageLayer", "lay")
+        self.hists["exhima"] = self._make_hist_1D("hAllImageEneVsEta", "eta", "hit")
+        self.hists["exrima"] = self._make_hist_1D("hAllImageEneVsRad", "rad", "hit")
+        self.hists["exlima"] = self._make_hist_1D("hAllImageEneVsLayer", "lay", "hit")
+        self.hists["exaima"] = self._make_hist_1D("hAllImageEneVsAng",angle, "hit")
+        self.hists["yxxima"] = self._make_hist_1D("hAllImageYVsX", "xy", "xy")
+        self.hists["rxzima"] = self._make_hist_1D("hAllImageRVsZ", "zed", "rad")
+        self.hists["axlima"] = self._make_hist_1D("hAllImageAngVsLayer", "lay", angle)
+
+        # max hit histograms
+        self.hists["emax"]   = self._make_hist_1D("hMaxImageEne", "hit")
+        self.hists["hmax"]   = self._make_hist_1D("hMaxImageEta", "eta")
+        self.hists["rmax"]   = self._make_hist_1D("hMaxImageR", "rad")
+        self.hists["zmax"]   = self._make_hist_1D("hMaxImageZ", "zed")
+        self.hists["amax"]   = self._make_hist_1D("hMaxImageAng", angle)
+        self.hists["lmax"]   = self._make_hist_1D("hMaxImageLayer", "lay")
+        self.hists["exhmax"] = self._make_hist_1D("hMaxImageEneVsEta", "eta", "hit")
+        self.hists["exrmax"] = self._make_hist_1D("hMaxImageEneVsRad", "rad", "hit")
+        self.hists["examax"] = self._make_hist_1D("hMaxImageEneVsAng", "ang", "hit")
+        self.hists["yxxmax"] = self._make_hist_1D("hMaxImageYVsX", "xy", "xy")
+        self.hists["rxzmax"] = self._make_hist_1D("hMaxImageRVsZ", "zed", "rad")
+
+        # event histograms
+        self.hists["maxe"] = self._make_hist_1D("hEvtMaxImageEne", "hit")
+        self.hists["minl"] = self._make_hist_1D("hEvtMinLayer", "lay")
+
+        # objective histograms
+        self.hists["eeff"]  = self._make_hist_1D("hEffEne", "ene")
+        self.hists["heff"]  = self._make_hist_1D("hEffEta", "eta")
+        self.hists["ares"]  = self._make_hist_1D("hAngRes", "res")
+        self.hists["resxl"] = self._make_hist_1D("hAngResVsMaxHitLayer", "lay", "res")
+
+        # TODO add efficiency * reso histogram
+
+    def create(self):
+        """Generate histograms"""
+        self._define_bins()
+        self._define_hists()
+        for hist in self.hists.values():
+            hist.Sumw2()
+
+    def save(self, file):
+        """Save histograms to provided file"""
+        for hist in self.hists.values():
+            file.WriteObject(hist)
+
+    def get(self, key):
+        return self.hists[key]
 
 # =============================================================================
 # Angular Resolution Calculation
@@ -187,42 +321,9 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
         case _:
             raise ValueError("Unknown coordinate specified!")
 
-    # construct axis title
-    axis = ";#delta" + var + " = " + var + "^{image}_{max hit} - " + var + "_{par}"
-
-    # create histogram from extracting resolution
-    hdiff = ROOT.TH1D("hAngRes", axis, 80, -0.2, 0.2)
-    hdiff.Sumw2()
-
-    # create utility histograms for tracking other
-    # relevant info
-    #   - TODO consolidate histograms into a helper class,
-    #     automate creating most of them, automate
-    #     Sumw2()ing
-    hpar   = ROOT.TH1D("hParEne", "Particle energy;E_{par} [GeV]", 20, -0.5, 9.5)
-    heff   = ROOT.TH1D("hEfficiency", "Efficiency as a function of particle energy;E_{par} [GeV]", 20, -0.5, 9.5)
-    hclust = ROOT.TH1D("hClustEne", "Associated cluster energy;E_{clust} [GeV]", 20, -0.5, 9.5)
-    hmax   = ROOT.TH1D("hMaxEneHit", "Energy of most energetic hit in most upstream layer;E^{image}_{max hit} [GeV]", 100, -0.5, 9.5)
-    hlay   = ROOT.TH1D("hMinLayer", "Most upstream layer;Layer", 8, -0.5, 7.5)
-    hmxl   = ROOT.TH2D("hMaxHitEneVsMinLayer", "Energy of most energetic hit vs. most upstream layer;Layer;E^{image}_{max hit} [GeV]", 8, -0.5, 7.5, 100, -0.5, 9.5)
-    hpar.Sumw2()
-    heff.Sumw2()
-    hclust.Sumw2()
-    hmax.Sumw2()
-    hlay.Sumw2()
-    hmxl.Sumw2()
-
-    # TODO add other useful histograms
-    #   - par (e, r, coord)
-    #   - all hit (e, r, coord), (x, y, z)
-    #   - max hit (e, r, coord), (x, y, z)
-    #   - hit layer max hit E
-    #   - hit layer vs. total energy
-    #   - 1st nonzero layer hit positions
-    #   - 1st nonzero layer index
-    #   - hit efficiency
-    #   - efficiency * reso
-    #   - efficiency vs. par (e, eta, phi)
+    # create histograms
+    hist = Hists(str(opts.pdg).replace("-", "M"))
+    hist.create()
 
     # event loops -------------------------------------------------------------
 
@@ -352,14 +453,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
 
     # save objects
     with ROOT.TFile(opts.ofile, "recreate") as out:
-        out.WriteObject(fdiff, "fAngRes")
-        out.WriteObject(hdiff, "hAngRes")
-        out.WriteObject(hpar, "hParEne")
-        out.WriteObject(heff, "hEfficiency")
-        out.WriteObject(hclust, "hClustEne")
-        out.WriteObject(hmax, "hMaxHitEne")
-        out.WriteObject(hlay, "hMinLayer")
-        out.WriteObject(hmxl, "hMaxHitEneVsMinLayer")
+        hist.save(out)
         out.Close()
 
     # write out key info to a text file for
