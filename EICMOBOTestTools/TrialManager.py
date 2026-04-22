@@ -150,12 +150,22 @@ class TrialManager:
             )
             commands.append(setRecInstall)
 
+        # identify what analysis inputs are needed
+        anaInputs = set()
+        for anaCfg in self.cfgAna["objectives"].values():
+            for inKey in anaCfg["inputs"]:
+                anaInputs.add(inKey)
+
         # step 2: generate relevant simulation,
         # reconstruction commands
         outFiles  = dict()
         simMerges = dict()
         recMerges = dict()
         for inKey, inCfg in self.cfgRun["sim_input"].items():
+
+            # if no objective needs input, ignore it
+            if inKey not in anaInputs:
+                continue
 
             # if there are multiple steering files,
             # loop over each
