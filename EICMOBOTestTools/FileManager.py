@@ -55,23 +55,25 @@ def ConvertSteeringToTag(steer):
     tag = tag.replace(".", "_")
     return tag 
 
-def GetBody(stage, label = "", steer = ""):
+def GetBody(stage, label = "", steer = "", analysis = ""):
     """GetBody
 
     Construct body (input, steering file, stage) of
     file/script name
 
     Args:
-      stage: the tag associated with the relevant stage of the trial
-      label: the label associated with the input
-      steer: the tag associated with the input steering file
+      stage:    the tag associated with the relevant stage of the trial
+      label:    the label associated with the input
+      steer:    the tag associated with the input steering file
+      analysis: the tag associated with the analysis being run
     Returns:
       body of file/script name
     """
     sstage = "" if stage == "" else "_" + stage
     slabel = "" if label == "" else "_" + label
     ssteer = "" if steer == "" else "_" + steer
-    body   = sstage + slabel + ssteer
+    sana   = "" if analysis == "" else "_" + analysis
+    body   = sstage + slabel + ssteer + sana
     return body
 
 def GetNewName(name, tag, ext = ".xml"):
@@ -167,7 +169,7 @@ def MakeScriptName(tag, label = "", steer = "", stage = "", analysis = ""):
     Returns:
       script name
     """
-    body = GetBody(label, steer, stage)
+    body = GetBody(label, steer, stage, analysis)
     return "do_aid2e_" + tag + body + ".sh"
 
 def MakeDetSetCommands(detector, config, tag):
