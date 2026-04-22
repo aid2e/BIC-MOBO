@@ -15,10 +15,10 @@
 #          -i <input file 1> -i <input file 2> ... \
 #          -o <output file> \
 #          -c <coordinate: eta, phi, ...> \
-#          -p <pdg code: 11, 22, ...> \
+#          -s <pdg code: 11, 22, ...> \
 #          -r <reco hit collection> (optional) \
-#          -m <mc particle collection> (optional) \
-#          -a <mc-cluster associtions> (optional)
+#          -p <mc particle collection> (optional) \
+#          -a <mc-cluster associations> (optional)
 #          -e <layer to exclude> -e <layer to exclude> ...
 # =============================================================================
 
@@ -310,7 +310,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
     Returns:
         Dictionary of {key, value} where
         - key: the name of the objective associated with this script,
-          in this case "resolution"
+          in this case the angular resolution
         - value: the value of the objective, in this case the RMS of
           the fit to the mc-reco differences
     """
@@ -404,7 +404,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
                         print(f"Warning! Hit {hit.getObjectID().index} has a layer above 6 ({layer})!")
                         continue
 
-                    if layer in excludes:
+                    if layer in opts.excludes:
                         continue
 
                     # scrape hit info for histogramming
