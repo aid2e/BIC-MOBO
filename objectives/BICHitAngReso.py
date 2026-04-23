@@ -514,7 +514,7 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
 
     # extract specific objective(s) to return
     objectives = {
-        f"{opts.angle}_resolution" : output["reso_fit_sigma"]
+        f"{opts.angle}_resolution_{opts.pdg}" : output["reso_fit_sigma"]
     }
 
     ojson = opts.ofile.replace(".root", ".json")
