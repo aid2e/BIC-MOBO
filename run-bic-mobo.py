@@ -7,9 +7,10 @@
 #    running the BIC-MOBO problem.
 # =============================================================================
 
-import argparse
-import os
+import argparse as ap
 import pickle
+import os
+import subprocess
 
 from ax.generation_strategy.generation_node import GenerationStep
 from ax.generation_strategy.generation_strategy import GenerationStrategy
@@ -47,20 +48,42 @@ def main(*args, **kwargs):
     """
 
     # set up arguments
-    parser = argparse.ArgumentParser()
+    parser = ap.ArgumentParser()
     parser.add_argument("-r", "--runner", help = "Runner type", nargs = '?', const = 1, type = str, default = "joblib")
     parser.add_argument("-x", "--experiment", help = "JSON-serialized Ax experiment to load", nargs = '?', const = 1, type = str, default = None)
+    parser.add_argument("-u", "--runconfig", help = "JSON config file for runtime options to use", nargs = '?', const = 1, type = str, default = None)
+    parser.add_argument("-e", "--expconfig", help = "JSON config file for Ax options to use", nargs = '?', const = 1, type = str, default = None)
+    parser.add_argument("-p", "--parconfig", help = "JSON config file for parameters to use", nargs = '?', const = 1, type = str, default = None)
+    parser.add_argument("-o", "--objconfig", help = "JSON config file for objectives to use", nargs = '?', const = 1, type = str, default = None)
+    parser.add_argument("-s", "--envscript", help = "Script to call to set environment variables", nargs= '?', const = 1, type = str, default = None)
 
     # grab arguments
-    args = parser.parse_args()    
+    args = parser.parse_args()
 
-    # grab paths to problem installation and
-    # configuration files
+    # if any config overrides provided,
+    # update environment variables
+    if args.runconfig is not None:
+        os.environ['RUN_CFG'] = args.runconfig
+    if args.expconfig is not None:
+        os.environ['EXP_CFG'] = args.expconfig
+    if args.parconfig is not None:
+        os.environ['PAR_CFG'] = args.parconfig
+    if args.objconfig is not None:
+        os.environ['OBJ_CFG'] = args.objconfig
+
+    # if an alternate environment script was provided,
+    # grab path and run it
     mobo_path = os.getenv('BIC_MOBO')
-    run_path  = mobo_path + "/configuration/run.config"
-    exp_path  = mobo_path + "/configuration/problem.config"
-    par_path  = mobo_path + "/configuration/parameters.config"
-    obj_path  = mobo_path + "/configuration/objectives.config"
+    mobo_this = f"{mobo_path}/bin/this-mobo.tcsh"
+    if args.envscript is not None:
+        mobo_this = args.envscript
+        subprocess.run(f"source {mobo_this}", shell = True)
+
+    # grab paths to config files
+    run_path = os.getenv('RUN_CFG')
+    exp_path = os.getenv('EXP_CFG')
+    par_path = os.getenv('PAR_CFG')
+    obj_path = os.getenv('OBJ_CFG')
 
     # load relevant config files
     cfg_run = emt.ReadJsonFile(run_path)
@@ -124,9 +147,9 @@ def main(*args, **kwargs):
             runner = SlurmRunner(
                 slurm_template = f"{mobo_path}/configuration/template.slurm",
                 init_env = [
-                    f"source {mobo_path}/bin/this-mobo.tcsh",
+                    f"source {mobo_this}",
                     f"source {cfg_run['conda']}",
-                    "conda activate bic-mobo",
+                    f"conda activate {cfg_run['environment']}",
                     "conda list"
                 ]
             )
@@ -144,7 +167,7 @@ def main(*args, **kwargs):
     scheduler.set_objective_function(itf.RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = cfg_exp["n_max_trials"])
+    #best = scheduler.run_optimization(max_trials = cfg_exp["n_max_trials"])
     print("Optimization complete! Best parameters:\n", best)
 
     # create paths to output files

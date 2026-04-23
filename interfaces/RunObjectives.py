@@ -33,12 +33,11 @@ def RunObjectives(tag = None, **kwargs):
     import subprocess
     import EICMOBOTestTools as emt
 
-    # grab path to problem installation so we
-    # can locate the config files
-    mobo_path = os.getenv('BIC_MOBO')
-    run_path  = mobo_path + "/configuration/run.config"
-    par_path  = mobo_path + "/configuration/parameters.config"
-    obj_path  = mobo_path + "/configuration/objectives.config"
+    # grab paths to config files
+    run_path  = os.getenv('RUN_CFG')
+    exp_path  = os.getenv('EXP_CFG')
+    par_path  = os.getenv('PAR_CFG')
+    obj_path  = os.getenv('OBJ_CFG')
 
     # create trial manager
     trial = emt.TrialManager(run_path,

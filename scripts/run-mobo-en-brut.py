@@ -9,6 +9,7 @@
 #    parameterizations.
 # =============================================================================
 
+import argparse as ap
 import os
 import subprocess
 
@@ -52,6 +53,26 @@ def main(*args, **kwargs):
         "--cpus-per-task=4"
     ]
 
+    # set up arguments
+    parser = ap.ArgumentParser()
+    parser.add_argument("-u", "--runconfig", help = "JSON config file for runtime options to use", nargs = '?', const = 1, type = str, default = None)
+
+    # grab arguments
+    args = parser.parse_args()
+
+    # if any config overrides provided,
+    # update environment variables
+    if args.runconfig is not None:
+        os.environ['RUN_CFG'] = args.runconfig
+
+    # extract path path to run config
+    # and set runner paths
+    run_path = os.getenv['RUN_CFG']
+    obj_run  = os.getenv('BIC_MOBO') + "/interfaces/RunObjectives.py"
+
+    # load relevant config files
+    cfg_run = emt.ReadJsonFile(run_path)
+
     # parameterizations
     params = []
     for stave2 in range(2):
@@ -61,15 +82,6 @@ def main(*args, **kwargs):
                     for stave6 in range(2):
                         param = [stave2, stave3, stave4, stave5, stave6]
                         params.append(param)
-
-    # extract path path to run config
-    # and set runner paths
-    mobo_path = os.getenv('BIC_MOBO')
-    run_path  = mobo_path + "/configuration/run.config"
-    obj_run   = mobo_path + "/interfaces/RunObjectives.py"
-
-    # load relevant config files
-    cfg_run = emt.ReadJsonFile(run_path)
 
     # create and run a Slurm job for each parameterization
     itrial = 0

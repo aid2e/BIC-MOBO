@@ -16,5 +16,9 @@ else
     set path_to_this = `readlink -f "$0:q"`
 endif
 setenv BIC_MOBO "${path_to_this:h:h}"
+setenv OBJ_CFG "$BIC_MOBO/configuration/objectives.config"
+setenv PAR_CFG "$BIC_MOBO/configuration/parameters.config"
+setenv EXP_CFG "$BIC_MOBO/configuration/problem.config"
+setenv RUN_CFG "$BIC_MOBO/configuration/run.config"
 
 # end ===========================================
