@@ -20,5 +20,7 @@ setenv OBJ_CFG "$BIC_MOBO/configuration/objectives.config"
 setenv PAR_CFG "$BIC_MOBO/configuration/parameters.config"
 setenv EXP_CFG "$BIC_MOBO/configuration/problem.config"
 setenv RUN_CFG "$BIC_MOBO/configuration/run.config"
+setenv SLM_TMP "$BIC_MOBO/configuration/template.slurm"
+setenv ENV_SCR "$BIC_MOBO/bin/this-mobo.csh"
 
 # end ===========================================
