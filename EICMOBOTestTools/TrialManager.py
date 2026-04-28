@@ -8,9 +8,10 @@
 # =============================================================================
 
 import datetime
+import json
+import os
 import pathlib
 import re
-import os
 import subprocess
 
 from EICMOBOTestTools import AnaGenerator
@@ -149,10 +150,22 @@ class TrialManager:
             )
             commands.append(setRecInstall)
 
+        # identify what analysis inputs are needed
+        anaInputs = set()
+        for anaCfg in self.cfgAna["objectives"].values():
+            for inKey in anaCfg["inputs"]:
+                anaInputs.add(inKey)
+
         # step 2: generate relevant simulation,
         # reconstruction commands
-        outFiles = dict()
+        outFiles  = dict()
+        simMerges = dict()
+        recMerges = dict()
         for inKey, inCfg in self.cfgRun["sim_input"].items():
+
+            # if no objective needs input, ignore it
+            if inKey not in anaInputs:
+                continue
 
             # if there are multiple steering files,
             # loop over each
@@ -186,7 +199,8 @@ class TrialManager:
                     )
                 )
 
-            # step 3: generate relevant merging/analysis commands
+            # now generate command to merge sim, reco
+            # output from each individual dataset
             #   -- FIXME it would be better to have some way to
             #      1st identify what needs to be merged and then
             #      only merge that
@@ -194,32 +208,73 @@ class TrialManager:
             doRecMerge, recMerged = self.anaGen.MakeMergeCommand(self.tag, inKey, "rec")
             commands.append(doSimMerge)
             commands.append(doRecMerge)
+            simMerges[inKey] = simMerged
+            recMerges[inKey] = recMerged
 
-            # find objectives requiring current input
-            for anaKey, anaCfg in self.cfgAna["objectives"].items():
+        # grab output directory for any merging that needs
+        # to be done
+        outDir = self.cfgRun["out_path"] + "/" + self.tag
 
-                # skip if objective is not an analysis
-                if anaCfg["stage"] != "ana":
-                    continue
+        # step 3: generate relevant analysis commands
+        anaMerges = list()
+        for anaKey, anaCfg in self.cfgAna["objectives"].items():
 
-                # skip if not needing input 
-                if anaCfg["input"] != inKey:
-                    continue
+            # skip if objective is not an analysis
+            if anaCfg["stage"] != "ana":
+                continue
 
-                # otherwise generate command to run analysis and
-                # its output file
-                command, outFile = self.anaGen.MakeCommand(self.tag,
-                                                           inKey,
-                                                           anaKey,
-                                                           simMerged,
-                                                           recMerged)
+            # collect files for each input dataset. If no
+            # inputs present, skip objective
+            simInputs   = list()
+            recInputs   = list()
+            anaInLabels = list()
+            for inKey in anaCfg["inputs"]:
+                if inKey in simMerges and inKey in recMerges:
+                    simInputs.append(simMerges[inKey])
+                    recInputs.append(recMerges[inKey])
+                    anaInLabels.append(inKey)
 
-                # append analysis command and output file
-                # to appropriate lists/dictionaries
-                commands.append(command)
-                outFiles[anaKey] = outFile
+            anaInLabel = ""
+            if len(anaInLabels) == 0:
+                continue
+            else:
+                anaInLabels = sorted(anaInLabels)
+                anaInLabel  = '_'.join(anaInLabels)
 
-        # make sure run directory
+            # now generate merging commands
+            simInput = ""
+            if len(simInputs) == 1:
+                simInput = simInputs[0]
+            else:
+                simInput = outDir + "/" + FileManager.MakeOutName("sim", self.tag, anaInLabel, "", "", "merge")
+                if simInput not in anaMerges:
+                    simMerge = "hadd -f " + simInput + " " + ' '.join(simInputs)
+                    commands.append(simMerge)
+                    anaMerges.append(simInput)
+
+            recInput = ""
+            if len(recInputs) == 1:
+                recInput = recInputs[0]
+            else:
+                recInput = outDir + "/" + FileManager.MakeOutName("rec", self.tag, anaInLabel, "", "", "merge")
+                if recInput not in anaMerges:
+                    recMerge = "hadd -f " + recInput + " " + ' '.join(recInputs)
+                    commands.append(recMerge)
+                    anaMerges.append(recInput)
+
+            # and finally generate analysis command
+            command, outFile = self.anaGen.MakeCommand(self.tag,
+                                                       inKey,
+                                                       anaKey,
+                                                       simInput,
+                                                       recInput)
+
+            # append analysis command and output file
+            # to appropriate lists/dictionaries
+            commands.append(command)
+            outFiles[anaKey] = outFile
+
+        # step 4: make sure run directory
         # exists for trial
         runDir = self.cfgRun["run_path"] + "/" + self.tag
         FileManager.MakeDir(runDir)
@@ -271,14 +326,14 @@ class TrialManager:
         #       threshold
         for anaKey, anaOut in outFiles.items():
             anaPath = pathlib.Path(anaOut)
-            anaTxt  = anaPath.with_suffix('.txt')
-            with open(anaTxt, 'a+') as txt:
+            anaJson = anaPath.with_suffix('.json')
+            with open(anaJson, 'r+') as anaj:
+                anaDat = json.load(anaj)
                 if process.returncode == 9:
-                    dum = self.anaGen.GetDummyValue(anaKey)
-                    txt.write(f"{dum}")
-                for parKey, parVal in param.items():
-                    txt.write("\n")
-                    txt.write(f"{parVal}")
+                    anaDat[anaKey] = self.anaGen.GetDummyValue(anaKey)
+                outDat = anaDat | param
+                anaj.seek(0)
+                json.dump(outDat, anaj)
 
         # return relevant output files
         return outFiles
