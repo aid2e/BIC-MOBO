@@ -7,6 +7,7 @@ __all__ = [
     "GetMoboPath",
     "GetSlurmTemplate",
     "GetThisMobo",
+    "LoadConfig",
     "LoadConfigs",
     "ParseArguments",
     "RunObjectives",

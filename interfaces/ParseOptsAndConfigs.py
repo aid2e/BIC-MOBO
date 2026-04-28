@@ -45,11 +45,26 @@ def GetConfigPaths() -> Tuple[str, ...]:
     Return paths to configuration files
     as a tuple of strings.
     """
-    run_path = GetConfigPath('run') 
-    exp_path = GetConfigPath('exp')
-    par_path = GetConfigPath('par')
-    obj_path = GetConfigPath('obj')
-    return (run_path, exp_path, par_path, obj_path)
+    return (
+        GetConfigPath('run'),
+        GetConfigPath('exp'),
+        GetConfigPath('par'),
+        GetConfigPath('obj'),
+    )
+
+
+def LoadConfig(config: str) -> Dict[str, Any]:
+    """Load a configuration file
+
+    Args:
+      config: string indicating which config to load
+              (run, exp, par, obj)
+    Returns:
+      Loaded config file as a dictionary
+    """
+    path = GetConfigPath(config)
+    data = emt.ReadJsonFile(path)
+    return data
 
 
 def LoadConfigs() -> Tuple[Dict[str, Any], ...]:
@@ -58,13 +73,12 @@ def LoadConfigs() -> Tuple[Dict[str, Any], ...]:
     Loads configuration files into dictionaries
     and returns them as a tuple.
     """
-    run_path, exp_path, par_path, obj_path = GetConfigPaths()
-
-    run_cfg = emt.ReadJsonFile(run_path)
-    exp_cfg = emt.ReadJsonFile(exp_path)
-    par_cfg = emt.ReadJsonFile(par_path)
-    obj_cfg = emt.ReadJsonFile(obj_path)
-    return (run_cfg, exp_cfg, par_cfg, obj_cfg)
+    return (
+        LoadConfig('run'),
+        LoadConfig('exp'),
+        LoadConfig('par'),
+        LoadConfig('obj'),
+    )
 
 
 def ParseArguments() -> ap.Namespace:
@@ -82,6 +96,7 @@ def ParseArguments() -> ap.Namespace:
       -p: specify a parameter config to use
       -o: specify an objective config to use
       -s: specify an environment script to source
+      -t: specify a SLURM template to use
     Returns:
       argparse.Namespace object with attributes.
     """
@@ -92,7 +107,8 @@ def ParseArguments() -> ap.Namespace:
     parser.add_argument("-e", "--expconfig", help = "JSON config file for Ax options to use", nargs = '?', const = 1, type = str, default = None)
     parser.add_argument("-p", "--parconfig", help = "JSON config file for parameters to use", nargs = '?', const = 1, type = str, default = None)
     parser.add_argument("-o", "--objconfig", help = "JSON config file for objectives to use", nargs = '?', const = 1, type = str, default = None)
-    parser.add_argument("-s", "--envscript", help = "Script to call to set environment variables", nargs= '?', const = 1, type = str, default = None)
+    parser.add_argument("-s", "--envscript", help = "Script to call to set environment variables", nargs = '?', const = 1, type = str, default = None)
+    parser.add_argument("-t", "--template", help = "SLURM template to use", nargs = '?', const = 1, type = str, default = None)
 
     # grab arguments
     args = parser.parse_args()

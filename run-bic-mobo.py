@@ -41,8 +41,8 @@ def main(*args, **kwargs):
 
     User can also specify an Ax experiment
     to load with the -x option, or override
-    which configuration file to use with the
-    -r, -e, -p, -o, -s options as detailed
+    which configuration files to use with the
+    -u, -e, -p, -o, -s, -t options as detailed
     below.
 
     Args:
@@ -53,8 +53,8 @@ def main(*args, **kwargs):
       -p: specify a parameter config to use
       -o: specify an objective config to use
       -s: specify an environment script to source
+      -t: specify a SLURM template to use
     """
-
     # parse argsuments
     args = itf.ParseArguments()
 

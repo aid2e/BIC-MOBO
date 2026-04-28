@@ -11,16 +11,18 @@
 
 import argparse as ap
 import os
+import shutil
 import subprocess
 
 import EICMOBOTestTools as emt
+import interfaces as itf
 
 def MakeParamArgs(parlist):
     """MakeParamArgs
 
-    Helper method to convert a
-    list of values into a list
-    of keyword arguments.
+    Helper method to convert a list of
+    values into a list of keyword
+    arguments.
 
     Args:
       parlist: ordered list of parameter values
@@ -38,40 +40,27 @@ def MakeParamArgs(parlist):
 def main(*args, **kwargs):
     """main
 
-    Alternative wrapper to run BIC-MOBO.
-    Eschews Ax to instead manually sample
-    a set of specific parameterizations. 
+    Alternative wrapper to run BIC-MOBO. Eschews
+    Ax to instead manually sample a set of
+    specific parameterizations.
+
+    User can override which configuration files
+    to use with the -u, -p, -o, -s, -t options
+    as detailed below.
+
+    Args:
+      -u: specify a run config to use
+      -p: specify a parameter config to use
+      -o: specify an objective config to use
+      -s: specify an environment script to source
+      -t: specify a SLURM template to use
     """
-    # slurm options
-    slopts = [
-        "--account=eic",
-        "--partition=ifarm",
-        "--mail-user=dereka@jlab.org",
-        "--mail-type=END,FAIL",
-        "--time=24:00:00",
-        "--mem=8G",
-        "--cpus-per-task=4"
-    ]
+    # parse argsuments
+    args = itf.ParseArguments()
 
-    # set up arguments
-    parser = ap.ArgumentParser()
-    parser.add_argument("-u", "--runconfig", help = "JSON config file for runtime options to use", nargs = '?', const = 1, type = str, default = None)
-
-    # grab arguments
-    args = parser.parse_args()
-
-    # if any config overrides provided,
-    # update environment variables
-    if args.runconfig is not None:
-        os.environ['RUN_CFG'] = args.runconfig
-
-    # extract path path to run config
-    # and set runner paths
-    run_path = os.getenv['RUN_CFG']
-    obj_run  = os.getenv('BIC_MOBO') + "/interfaces/RunObjectives.py"
-
-    # load relevant config files
-    cfg_run = emt.ReadJsonFile(run_path)
+    # load and grab relevant configs/paths
+    run_cfg = itf.LoadConfig('run')
+    obj_run = itf.GetMoboPath() + "/interfaces/RunObjectives.py"
 
     # parameterizations
     params = []
@@ -92,20 +81,18 @@ def main(*args, **kwargs):
         tagarg = f"--tag {tag}"
 
         # set ouput & error logs
-        out = f"--output={cfg_run['log_path']}/{tag}.out"
-        err = f"--error={cfg_run['log_path']}/{tag}.err"
+        out = f"--output={run_cfg['log_path']}/{tag}.out"
+        err = f"--error={run_cfg['log_path']}/{tag}.err"
 
         # generate parameter arguments 
         parargs = MakeParamArgs(param)
 
-        # create slurm script
-        slpath = cfg_run["run_path"] + f"/Run{tag}.sh"
-        with open(slpath, 'w') as script:
+        # copy slurm template to run directory
+        slpath = run_cfg["run_path"] + f"/Run{tag}.sh"
+        shutil.copyfile(itf.GetSlurmTemplate(), slpath)
 
-          # add specified options
-          script.write("#!/bin/bash\n")
-          for opt in slopts:
-              script.write(f"#SBATCH {opt}\n")
+        # append additional commands to slurm script
+        with open(slpath, 'a') as script:
 
           # add output/error options
           script.write(f"#SBATCH {out}\n")
