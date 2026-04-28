@@ -9,12 +9,10 @@
 #    parameterizations.
 # =============================================================================
 
-import argparse as ap
 import os
 import shutil
 import subprocess
 
-import EICMOBOTestTools as emt
 import interfaces as itf
 
 def MakeParamArgs(parlist):

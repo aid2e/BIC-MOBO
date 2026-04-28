@@ -7,10 +7,8 @@
 #    running the BIC-MOBO problem.
 # =============================================================================
 
-import argparse as ap
 import pickle
 import os
-import subprocess
 
 from ax.generation_strategy.generation_node import GenerationStep
 from ax.generation_strategy.generation_strategy import GenerationStrategy
@@ -20,7 +18,6 @@ from ax.service.utils.report_utils import exp_to_df
 from scheduler import AxScheduler, JobLibRunner, SlurmRunner
 
 import AID2ETestTools as att
-import EICMOBOTestTools as emt
 import interfaces as itf
 
 def main(*args, **kwargs):
