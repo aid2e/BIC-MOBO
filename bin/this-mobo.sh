@@ -11,5 +11,11 @@
 
 path_to_this=$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 export BIC_MOBO=$(dirname -- "$path_to_this")
+export OBJ_CFG=$BIC_MOBO/configurations/objectives.config
+export PAR_CFG=$BIC_MOBO/configuration/parameters.config
+export EXP_CFG=$BIC_MOBO/configuration/problem.config
+export RUN_CFG=$BIC_MOBO/configuration/run.config
+export SLM_TMP=$BIC_MOBO/configuration/template.slurm
+export ENV_SCR=$BIC_MOBO/bin/this-mobo.sh
 
 # end ===========================================

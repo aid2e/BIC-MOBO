@@ -8,7 +8,6 @@
 # =============================================================================
 
 import argparse as ap
-import json
 
 
 def RunObjectives(tag = None, **kwargs):
@@ -27,18 +26,13 @@ def RunObjectives(tag = None, **kwargs):
 
     # NB use lazy importing to make sure
     # dependencies get picked up
-    import datetime
+    import json
     import os
-    import re
-    import subprocess
     import EICMOBOTestTools as emt
+    import interfaces as itf
 
-    # grab path to problem installation so we
-    # can locate the config files
-    mobo_path = os.getenv('BIC_MOBO')
-    run_path  = mobo_path + "/configuration/run.config"
-    par_path  = mobo_path + "/configuration/parameters.config"
-    obj_path  = mobo_path + "/configuration/objectives.config"
+    # grab paths to config files
+    run_path, exp_path, par_path, obj_path = itf.GetConfigPaths()
 
     # create trial manager
     trial = emt.TrialManager(run_path,
@@ -69,7 +63,7 @@ def RunObjectives(tag = None, **kwargs):
         for key, value in kwargs.items():
             if "enable_staves_" in key:
                 cost += int(value)
-        objectives["Cost"] = cost
+        objectives["cost"] = cost
 
     # return dictionary of objectives
     return objectives

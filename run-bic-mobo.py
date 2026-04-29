@@ -7,9 +7,8 @@
 #    running the BIC-MOBO problem.
 # =============================================================================
 
-import argparse
-import os
 import pickle
+import os
 
 from ax.generation_strategy.generation_node import GenerationStep
 from ax.generation_strategy.generation_strategy import GenerationStrategy
@@ -19,7 +18,6 @@ from ax.service.utils.report_utils import exp_to_df
 from scheduler import AxScheduler, JobLibRunner, SlurmRunner
 
 import AID2ETestTools as att
-import EICMOBOTestTools as emt
 import interfaces as itf
 
 def main(*args, **kwargs):
@@ -38,40 +36,32 @@ def main(*args, **kwargs):
       slurm  -- use slurm runner
       panda  -- use panda runner (TODO)
 
-    And can provide a JSON file to load
-    an experiment from with the -x option
+    User can also specify an Ax experiment
+    to load with the -x option, or override
+    which configuration files to use with the
+    -u, -e, -p, -o, -s, -t options as detailed
+    below.
 
     Args:
-      -r: specify runner (optional)
-      -x: specify experiment to load (optional)
+      -r: specify runner
+      -x: specify experiment to load
+      -u: specify a run config to use
+      -e: specify an experiment/problem config to use
+      -p: specify a parameter config to use
+      -o: specify an objective config to use
+      -s: specify an environment script to source
+      -t: specify a SLURM template to use
     """
-
-    # set up arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-r", "--runner", help = "Runner type", nargs = '?', const = 1, type = str, default = "joblib")
-    parser.add_argument("-x", "--experiment", help = "JSON-serialized Ax experiment to load", nargs = '?', const = 1, type = str, default = None)
-
-    # grab arguments
-    args = parser.parse_args()    
-
-    # grab paths to problem installation and
-    # configuration files
-    mobo_path = os.getenv('BIC_MOBO')
-    run_path  = mobo_path + "/configuration/run.config"
-    exp_path  = mobo_path + "/configuration/problem.config"
-    par_path  = mobo_path + "/configuration/parameters.config"
-    obj_path  = mobo_path + "/configuration/objectives.config"
+    # parse argsuments
+    args = itf.ParseArguments()
 
     # load relevant config files
-    cfg_run = emt.ReadJsonFile(run_path)
-    cfg_exp = emt.ReadJsonFile(exp_path)
-    cfg_par = emt.ReadJsonFile(par_path)
-    cfg_obj = emt.ReadJsonFile(obj_path)
+    run_cfg, exp_cfg, par_cfg, obj_cfg = itf.LoadConfigs()
 
     # translate parameter, objective options
     # into ax-compliant ones
-    ax_pars, ax_par_cons = att.ConvertParamConfig(cfg_par)
-    ax_objs, ax_obj_cons = att.ConvertObjectConfig(cfg_obj)
+    ax_pars, ax_par_cons = att.ConvertParamConfig(par_cfg)
+    ax_objs, ax_obj_cons = att.ConvertObjectConfig(obj_cfg)
 
     # define generation strategy to use
     #   - TODO try bandit optimization
@@ -79,14 +69,14 @@ def main(*args, **kwargs):
         steps = [
             GenerationStep(
                 model = Generators.SOBOL,
-                num_trials = cfg_exp["n_sobol"],
-                min_trials_observed = cfg_exp["min_sobol"],
-                max_parallelism = cfg_exp["n_sobol"]
+                num_trials = exp_cfg["n_sobol"],
+                min_trials_observed = exp_cfg["min_sobol"],
+                max_parallelism = exp_cfg["n_sobol"]
             ),
             GenerationStep(
                 model = Generators.BOTORCH_MODULAR,
                 num_trials = -1,
-                max_parallelism = cfg_exp["max_parallel_gen"]
+                max_parallelism = exp_cfg["max_parallel_gen"]
             )
         ]
     )
@@ -99,7 +89,7 @@ def main(*args, **kwargs):
             enforce_sequential_optimization = False
         )
         ax_client.create_experiment(
-            name = cfg_exp["problem_name"],
+            name = exp_cfg["problem_name"],
             parameters = ax_pars,
             objectives = ax_objs,
             parameter_constraints = ax_par_cons
@@ -115,18 +105,20 @@ def main(*args, **kwargs):
     match args.runner:
         case "joblib":
             runner = JobLibRunner(
-                n_jobs = cfg_run["sched_n_jobs"],
+                n_jobs = run_cfg["sched_n_jobs"],
                 config = {
-                    'tmp_dir' : cfg_run["run_path"]
+                    'tmp_dir' : run_cfg["run_path"]
                 }
             )
         case "slurm":
             runner = SlurmRunner(
-                slurm_template = f"{mobo_path}/configuration/template.slurm",
+                #slurm_template = f"{mobo_path}/configuration/template.slurm",
+                slurm_template = f"{itf.GetSlurmTemplate()}",
                 init_env = [
-                    f"source {mobo_path}/bin/this-mobo.tcsh",
-                    f"source {cfg_run['conda']}",
-                    "conda activate bic-mobo",
+                    #f"source {mobo_this}",
+                    f"source {itf.GetThisMobo()}",
+                    f"source {run_cfg['conda']}",
+                    f"conda activate {run_cfg['environment']}",
                     "conda list"
                 ]
             )
@@ -138,17 +130,16 @@ def main(*args, **kwargs):
         ax_client,
         runner,
         config = {
-            'job_output_dir' : cfg_exp["OUTPUT_DIR"],
+            'job_output_dir' : exp_cfg["OUTPUT_DIR"],
         }
     )
     scheduler.set_objective_function(itf.RunObjectives)
 
     # run and report best parameters
-    best = scheduler.run_optimization(max_trials = cfg_exp["n_max_trials"])
-    print("Optimization complete! Best parameters:\n", best)
+    best = scheduler.run_optimization(max_trials = exp_cfg["n_max_trials"])
 
     # create paths to output files
-    oPathBase = cfg_exp["OUTPUT_DIR"] + "/" + cfg_exp["problem_name"]
+    oPathBase = exp_cfg["OUTPUT_DIR"] + "/" + exp_cfg["problem_name"]
     oPathCSV  = oPathBase + "_exp_out.csv"
     oPathJson = oPathBase + "_exp_out.json"
     oPathPikl = oPathBase + "_gen_out.pkl"
