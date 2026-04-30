@@ -71,7 +71,7 @@ def main(*args, **kwargs):
                 model = Generators.SOBOL,
                 num_trials = exp_cfg["n_sobol"],
                 min_trials_observed = exp_cfg["min_sobol"],
-                max_parallelism = exp_cfg["n_sobol"]
+                max_parallelism = exp_cfg["max_parallel_gen"]
             ),
             GenerationStep(
                 model = Generators.BOTORCH_MODULAR,
