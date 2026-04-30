@@ -21,7 +21,7 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
       with one objective, energy resolution
 - [x] Run workflow with one objective on hPC resources via
       SLURM using scheduler
-- [ ] Implement second objective, electron-pion separation
+- [x] Implement second objective, electron-pion separation
 - [ ] Run workflow with both objectives on HPC resources via
       PANDA using scheduler
 
@@ -209,11 +209,11 @@ Finally, the optimization can be run locally with:
 python run-bic-mobo.py
 ```
 
-Or it can be run via Slurm using the script `launch-mobo`, which
-dispatches a pilot job.  Update the slurm options in `configuration/
-template.slurm` accordingly, and launch the job with:
+Or it can be run via Slurm using the script `launch-mobo.py`, which
+dispatches a sequence of pilot jobs.  Update the slurm options in
+`configuration/template.slurm` accordingly, and launch the job with:
 ```bash
-sbatch launch-mobo
+python launch-mobo.py
 ```
 
 Various analyses can be run on the optimization output with the
