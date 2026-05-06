@@ -198,7 +198,7 @@ picking up the correct objective scripts, eg.
 }
 ```
 
-Once appropriately configured, we need to set an environemnt variable
+Once appropriately configured, we need to set an environment variable
 to point to our installation via:
 ```bash
 source bin/this-mobo.sh
