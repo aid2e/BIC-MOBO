@@ -125,6 +125,7 @@ installations and relevent scripts, eg.
 {
     "_comment"      : "Configures runtime options, and paths to EIC software components",
     "conda"         : "<path-to-your-script>/conda.sh",
+    "environment"   : "bic-mobo",
     "out_path"      : "<where-the-output-goes>",
     "run_path"      : "<where-the-running-happens>",
     "log_path"      : "<where-the-logs-go>",
@@ -153,6 +154,8 @@ installations and relevent scripts, eg.
         "EcalBarrelImagingClusterAssociations",
         "EcalBarrelClusters"
     ]
+    "sched_n_jobs"        : 1,
+    "monitoring_interval" : 30
 }
 
 ```

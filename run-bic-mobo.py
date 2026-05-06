@@ -112,10 +112,8 @@ def main(*args, **kwargs):
             )
         case "slurm":
             runner = SlurmRunner(
-                #slurm_template = f"{mobo_path}/configuration/template.slurm",
                 slurm_template = f"{itf.GetSlurmTemplate()}",
                 init_env = [
-                    #f"source {mobo_this}",
                     f"source {itf.GetThisMobo()}",
                     f"source {run_cfg['conda']}",
                     f"conda activate {run_cfg['environment']}",
@@ -131,6 +129,9 @@ def main(*args, **kwargs):
         runner,
         config = {
             'job_output_dir' : exp_cfg["OUTPUT_DIR"],
+            'max_concurrent_trials' : exp_cfg["max_parallel_gen"],
+            'enable_checkpoint' : True,
+            'monitoring_interval' : run_cfg["monitoring_interval"],
         }
     )
     scheduler.set_objective_function(itf.RunObjectives)
