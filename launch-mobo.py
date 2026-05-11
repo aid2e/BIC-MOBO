@@ -135,7 +135,7 @@ def main(*args, **kwargs):
     exp_cfg   = itf.LoadConfig('exp')
     nparallel = exp_cfg['max_parallel_gen']
     ntotal    = exp_cfg['n_max_trials']
-    nwave     = math.floor(ntotal / nparallel)
+    nwave     = math.ceil(ntotal / nparallel)
 
     # create and submit a pilot job for each wave
     prevjob = None
