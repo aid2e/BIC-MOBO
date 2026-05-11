@@ -7,8 +7,9 @@
 #    running the BIC-MOBO problem.
 # =============================================================================
 
-import pickle
+import json
 import os
+import pickle
 
 from ax.generation_strategy.generation_node import GenerationStep
 from ax.generation_strategy.generation_strategy import GenerationStrategy
@@ -138,12 +139,18 @@ def main(*args, **kwargs):
 
     # run and report best parameters
     best = scheduler.run_optimization(max_trials = exp_cfg["n_max_trials"])
+    print(f"Optimization complete! Best parameters:\n", best)
 
     # create paths to output files
     oPathBase = exp_cfg["OUTPUT_DIR"] + "/" + exp_cfg["problem_name"]
     oPathCSV  = oPathBase + "_exp_out.csv"
     oPathJson = oPathBase + "_exp_out.json"
     oPathPikl = oPathBase + "_gen_out.pkl"
+    oPathBest = oPathBase + "_best_params.json"
+
+    # save optimal prameters to a json file
+    with open(oPathBest, 'w') as file:
+        json.dump(best, file)
 
     # grab experiment and generation strategy
     # for output
