@@ -5,6 +5,7 @@ dependencies:
   - python=3.11.5
   - pip
   - pip:
+    # Core Ax and optimization dependencies
     - ax-platform==1.0.0
     - torch
     - pandas
@@ -13,3 +14,20 @@ dependencies:
     - seaborn
     - wandb
     - botorch
+    
+    # Scheduler with PanDA support (from GitHub repository)
+    # Installs scheduler_epic directly from GitHub with PanDA dependencies
+    - git+https://github.com/aid2e/scheduler_epic.git[panda]
+    
+    # PanDA/iDDS packages for distributed computing
+    - idds-client
+    - idds-common
+    - idds-workflow
+    - panda-client
+    
+    # Additional dependencies for PanDA execution
+    - cloudpickle
+    - joblib
+    
+    # BIC-MOBO core packages (local installation)
+    - -e .

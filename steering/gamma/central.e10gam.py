@@ -3,7 +3,7 @@ from g4units import mm, GeV, MeV, degree
 
 SIM = DD4hepSimulation()
 SIM.gun.energy       = 10*GeV
-SIM.gun.particle     = "e-"
+SIM.gun.particle     = "gamma"
 SIM.gun.multiplicity = 1
 SIM.gun.position     = (0.0, 0.0, 0.0)
 SIM.gun.direction    = (0.0, 0.0, 1.0)

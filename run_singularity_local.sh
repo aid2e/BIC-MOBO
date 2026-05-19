@@ -17,7 +17,7 @@ fi
 echo "Script args: $@" >&2
 
 if [[ $# -gt 0 ]]; then
-    ${SINGULARITY_CMD} exec "${SIF_PATH}" /bin/bash -lc "export PATH=$PATH:/opt/local/bin && exec \"\$@\"" bash "$@"
+    ${SINGULARITY_CMD} exec "${SIF_PATH}" /bin/bash -lc "export PATH=/opt/local/bin:\$PATH && exec \"\$@\"" bash "$@"
 else
-    ${SINGULARITY_CMD} exec "${SIF_PATH}" /bin/bash -lc "export PATH=$PATH:/opt/local/bin && exec /bin/bash"
+    ${SINGULARITY_CMD} exec "${SIF_PATH}" /bin/bash -lc "export PATH=/opt/local/bin:\$PATH && exec /bin/bash"
 fi

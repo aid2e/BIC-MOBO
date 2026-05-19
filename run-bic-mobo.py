@@ -57,6 +57,8 @@ def main(*args, **kwargs):
     # grab paths to problem installation and
     # configuration files
     mobo_path = os.getenv('BIC_MOBO')
+    if mobo_path == None:
+        raise EnvironmentError("BIC_MOBO environment variable not set!")
     run_path  = mobo_path + "/configuration/run.config"
     exp_path  = mobo_path + "/configuration/problem.config"
     par_path  = mobo_path + "/configuration/parameters.config"

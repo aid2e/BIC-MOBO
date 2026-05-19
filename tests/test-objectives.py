@@ -9,49 +9,66 @@
 #  TODO convert to use pytest
 # =============================================================================
 
+import json
 import sys
 sys.path.append('../')
 
-import objectives.BICEnergyResolution as eres
+import objectives.BICClustEneReso as bcer
+import objectives.BICEPScan as beps
+import objectives.BICHitAngReso as bhar
 
 # test 0: run objectives ------------------------------------------------------
 
 # output file names for convenience
-ofResEle = "test_reso.ele.root"
-ofResPi0 = "test_reso.pi0.root"
+ofResGam = "test_eneres.gam.root"
+ofResEle = "test_etares.ele.root"
+ofResPiM = "test_reject.pim.root"
 
-# test resolution calculation on electrons
-ele_reso = eres.CalculateReso(
-    ifile = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/e-/5GeV/45to135deg/e-_5GeV_45to135deg.0099.eicrecon.edm4eic.root",
-    ofile = ofResEle,
-    pdg   = 11
-)
+# grab default options
+gam_opts = bcer.DEFAULT_OPTS
+ele_opts = bhar.DEFAULT_OPTS
+pim_opts = beps.DEFAULT_OPTS
+gam_opts.ofile = ofResGam
+ele_opts.ofile = ofResEle
+pim_opts.ofile = ofResPiM
 
-# test resolution calculation on pi0
-pi0_reso = eres.CalculateReso(
-    ifile = "root://dtn-eic.jlab.org//volatile/eic/EPIC/RECO/25.07.0/epic_craterlake/SINGLE/pi0/5GeV/45to135deg/pi0_5GeV_45to135deg.0099.eicrecon.edm4eic.root",
-    ofile = ofResPi0,
-    pdg   = 111
-)
+# test energy resolution calculatio on gamma
+gam_res = bcer.CalculateClustEneReso(gam_opts)
+
+# test angular resolution calculation on e-
+ele_res = bhar.CalculateHitAngReso(ele_opts)
+
+# test resolution calculation on pi- (and e-)
+pim_rej = beps.DoEPScan(pim_opts)
 
 print(f"[0] Ran objectives:")
-print(f"  -- e- resolution = {ele_reso}")
-print(f"  -- pi0 resolution = {pi0_reso}")
+print(f"  -- gamma energy resolution = {gam_res}")
+print(f"  -- e- eta resolution = {ele_res}")
+print(f"  -- pi- rejection power = {pim_rej}")
 
 # test 1: extract objectives --------------------------------------------------
 
-# extract electron resolution
-ele_reso_txt = None
-with open(ofResEle.replace(".root", ".txt")) as oele:
-    ele_reso_txt = float(oele.read().splitlines()[0])
+# extract gamma resolution
+gam_res_json = None
+with open(ofResGam.replace(".root", ".json")) as ogam:
+    gam_res_data = json.load(ogam)
+    gam_res_json = gam_res_data["energy_resolution"]
 
-# extract pi0 resolution
-pi0_reso_txt = None
-with open(ofResPi0.replace(".root", ".txt")) as opi0:
-    pi0_reso_txt = float(opi0.read().splitlines()[0])
+# extract e- resolution
+ele_res_json = None
+with open(ofResEle.replace(".root", ".json")) as oele:
+    ele_res_data = json.load(oele)
+    ele_res_json = ele_res_data["eta_resolution"]
+
+# extract pi- rejection power
+pim_rej_json = None
+with open(ofResPiM.replace(".root", ".json")) as opim:
+    pim_rej_data = json.load(opim)
+    pim_rej_json = pim_rej_data["rejection_power_-211"]
 
 print(f"[1] Extracted objectives:")
-print(f"  -- e- resolution = {ele_reso_txt}, type = {type(ele_reso_txt)}")
-print(f"  -- pi0 resolution = {pi0_reso_txt}, type = {type(pi0_reso_txt)}")
+print(f"  -- gamma energy resolution = {gam_res_json}, type = {type(gam_res_json)}")
+print(f"  -- e- eta resolution = {ele_res_json}, type = {type(ele_res_json)}")
+print(f"  -- pi- rejection = {pim_rej_json}, type = {type(pim_rej_json)}")
 
 # end =========================================================================

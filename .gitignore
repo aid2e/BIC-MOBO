@@ -10,3 +10,4 @@ epic/*
 run/
 stash
 *.agents.md
+test_*

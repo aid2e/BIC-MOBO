@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIF_PATH="/cvmfs/singularity.opensciencegrid.org/eic/eic_ci:nightly"
 
 #bind with gpfs02 only in local machine
-# if pwd has /gpfs02/ then bind /gpfs02 ...to keep run_singularity.sh work in rcf machines as well
+#if pwd has /gpfs02/ then bind /gpfs02 ...to keep run_singularity.sh work in rcf machines as well
 #if [[ "${PWD}" == /gpfs02/* ]]; then
 #    export APPTAINER_BINDPATH="${APPTAINER_BINDPATH:+${APPTAINER_BINDPATH},},/cvmfs,${PWD},/gpfs02"
 #else
