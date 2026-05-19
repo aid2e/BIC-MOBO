@@ -37,6 +37,7 @@ class GeometryEditor:
         self.runPath = self.cfgRun["run_path"] + "/" + tag
         self.geoDir  = pathlib.PurePath(self.cfgRun["det_path"]).name
         self.detPath = self.runPath + "/" + self.geoDir
+        self.cmakePath = self.cfgRun["cmake_path"]
 
     def __GetCompact(self, param, tag):
         """GetCompact
@@ -334,7 +335,7 @@ class GeometryEditor:
         # Return recompilation commands
         return "\n".join([
             f'cd {self.detPath}',
-            'cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install',
+            f'cmake -B build -S {self.cmakePath} -DCMAKE_INSTALL_PREFIX=install',
             'cmake --build build',
             'cmake --install build',
             'cd -'
