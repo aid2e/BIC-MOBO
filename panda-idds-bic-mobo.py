@@ -103,6 +103,7 @@ if __name__ == "__main__":
     # print the configuration parameters and objectives
     print("Configuration parameters: ", cfg_par)
     print("Configuration objectives: ", cfg_obj)
+    print("Configuration parameter constraints: ", cfg_par_cons)
     print("*****************************************************************")
     ax_client.create_experiment(
         name="BIC-MOBO-Panda-Experiment",
@@ -120,39 +121,52 @@ if __name__ == "__main__":
         "export AIDE_WORKDIR=$(pwd);",
         "export SIF=/cvmfs/singularity.opensciencegrid.org/eic/eic_ci:nightly;",
         "echo AIDE_WORKDIR: ${AIDE_WORKDIR};",
-        # Also copy the epic files...
-        #"mkdir -p ${AIDE_WORKDIR}/epic/share/epic;",
-        #"${SINGULARITY} exec --bind $(pwd):$(pwd) ${SIF} /bin/bash -c \"cp -RLrf /opt/detector/epic-main/share/epic/* ${AIDE_WORKDIR}/epic/share/epic/\";",
-        # Download epic software and build it
-        "git clone --depth 1 https://github.com/epic/epic.git ${AIDE_WORKDIR};",
-        #Cmake build and install inside eic container
-        "cd ${AIDE_WORKDIR}/epic; mkdir build install;",
-        "${SINGULARITY} exec --bind $(pwd):$(pwd) ${SIF} /bin/bash -c \"cd ${AIDE_WORKDIR}/epic; cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install ; cmake --build build; cmake --install build; cd -\";",
+
         # Install micromamba (minimal)
         "export MAMBA_ROOT_PREFIX=${AIDE_WORKDIR}/micromamba;",
         "export MAMBA_EXE=${MAMBA_ROOT_PREFIX}/bin/micromamba;",
         "mkdir -p ${MAMBA_ROOT_PREFIX}/bin;",
         'curl -Ls https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xj -C ${MAMBA_ROOT_PREFIX} bin/micromamba;',
-        "chmod a+rx ${MAMBA_ROOT_PREFIX};",
-        "${MAMBA_EXE} config append --system channels conda-forge;",
+        "chmod -R a+rx ${MAMBA_ROOT_PREFIX};",
         # Install Python 3.13
-        "${MAMBA_EXE} install -y -r ${MAMBA_ROOT_PREFIX} -n base python=3.13;",
+        "${MAMBA_EXE} install -y -r ${MAMBA_ROOT_PREFIX} -n base -c conda-forge python=3.13;",
         "${MAMBA_EXE} clean -a -y;",
         # Activate micromamba and install packages via pip
-        'eval "$(${MAMBA_EXE} shell hook -s posix)";',
+        'eval \"$(${MAMBA_EXE} shell hook -s posix)\";',
         "micromamba activate base;",
         "pip install pandas seaborn botorch ax-platform==1.0.0 numpy matplotlib torch;",
+
         # Make sure to use mamba python
         'export PATH=${MAMBA_ROOT_PREFIX}/bin:$PATH;',
-        #echo the python being used
-        'echo "python version being used " $(python --version; which python);',
+
+        # Echo python being used
+        'echo \"python version being used\" $(python --version; which python);',
+
+        # Clone epic
+        "git clone --depth 1 https://github.com/eic/epic.git ${AIDE_WORKDIR}/epic;",
+
+        # Create build/install dirs WITHOUT changing cwd
+        "mkdir -p ${AIDE_WORKDIR}/epic/build ${AIDE_WORKDIR}/epic/install;",
+
+        # Build epic inside singularity WITHOUT cd side-effects
+        '${SINGULARITY} exec --bind ${AIDE_WORKDIR}:${AIDE_WORKDIR} ${SIF} /bin/bash -c "cmake -B ${AIDE_WORKDIR}/epic/build -S ${AIDE_WORKDIR}/epic -DCMAKE_INSTALL_PREFIX=${AIDE_WORKDIR}/epic/install && cmake --build ${AIDE_WORKDIR}/epic/build && cmake --install ${AIDE_WORKDIR}/epic/build";',
+
         # Singularity setup
-        'export SINGULARITY_OPTIONS="--bind /cvmfs:/cvmfs,$(pwd):$(pwd)";',
+        'export SINGULARITY_OPTIONS="--bind /cvmfs:/cvmfs,${AIDE_WORKDIR}:${AIDE_WORKDIR}";',
         "export SIF=/cvmfs/singularity.opensciencegrid.org/eic/eic_ci:nightly;",
         "export SINGULARITY_BINDPATH=/cvmfs;",
-        "export BIC_MOBO=$(pwd);", # Set the BIC_MOBO environment variable to the current working directory...could have a flag to set this to something else if needed
+
+        # Set MOBO path
+        "export BIC_MOBO=${AIDE_WORKDIR};",
         "echo BIC_MOBO path: $BIC_MOBO;",
-        "env;"
+
+        # Debug
+        "env;",
+        "pwd;",
+        "python --version; which python;",
+        "echo \"Testing objective function execution:\";",
+        'python -c "import objectives.simple_objective; print(objectives.simple_objective.objective_function(0.1, 0.2))";',
+        'echo "END OF ENVIRONMENT SETUP";',
     ]
     init_env = " ".join(init_env)
 
@@ -162,7 +176,7 @@ if __name__ == "__main__":
         "name": dset_name_prefix,
         "init_env": init_env,
         "cloud": "US",
-        "queue": "BNL_OSG_PanDA_1", # Test runs locally # Other options are BNL_OSG_PanDA_2, BNL_OSG_PanDA_1, BNL_PanDA_1, BNL_PanDA_2
+        "queue": "BNL_PanDA_1", # Test runs locally # Other options are BNL_OSG_PanDA_2, BNL_OSG_PanDA_1, BNL_PanDA_1, BNL_PanDA_2
         "source_dir":None,
         "source_dir_parent_level":1,
         "exclude_source_files":[
@@ -175,7 +189,7 @@ if __name__ == "__main__":
             r"(^|/)gdml(/|$)",
             r"(^|/)epic(/|$)",
             "doc*",
-            ".*log","examples",
+            ".*log","examples","scheduler_epic",
             ".*txt","__pycache__" # calibrations dir has sym links
         ],
         "max_walltime":3600,
