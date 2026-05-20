@@ -21,7 +21,7 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
       with one objective, energy resolution
 - [x] Run workflow with one objective on hPC resources via
       SLURM using scheduler
-- [ ] Implement second objective, electron-pion separation
+- [x] Implement second objective, electron-pion separation
 - [ ] Run workflow with both objectives on HPC resources via
       PANDA using scheduler
 
@@ -125,6 +125,7 @@ installations and relevent scripts, eg.
 {
     "_comment"      : "Configures runtime options, and paths to EIC software components",
     "conda"         : "<path-to-your-script>/conda.sh",
+    "environment"   : "bic-mobo",
     "out_path"      : "<where-the-output-goes>",
     "run_path"      : "<where-the-running-happens>",
     "log_path"      : "<where-the-logs-go>",
@@ -153,6 +154,8 @@ installations and relevent scripts, eg.
         "EcalBarrelImagingClusterAssociations",
         "EcalBarrelClusters"
     ]
+    "sched_n_jobs"        : 1,
+    "monitoring_interval" : 30
 }
 
 ```
@@ -195,7 +198,7 @@ picking up the correct objective scripts, eg.
 }
 ```
 
-Once appropriately configured, we need to set an environemnt variable
+Once appropriately configured, we need to set an environment variable
 to point to our installation via:
 ```bash
 source bin/this-mobo.sh
@@ -209,11 +212,11 @@ Finally, the optimization can be run locally with:
 python run-bic-mobo.py
 ```
 
-Or it can be run via Slurm using the script `launch-mobo`, which
-dispatches a pilot job.  Update the slurm options in `configuration/
-template.slurm` accordingly, and launch the job with:
+Or it can be run via Slurm using the script `launch-mobo.py`, which
+dispatches a sequence of pilot jobs.  Update the slurm options in
+`configuration/template.slurm` accordingly, and launch the job with:
 ```bash
-sbatch launch-mobo
+python launch-mobo.py
 ```
 
 Various analyses can be run on the optimization output with the
