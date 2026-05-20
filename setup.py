@@ -12,7 +12,15 @@ import setuptools
 setuptools.setup(
     name     = 'bic-mobo',
     version  = '0.0.0',
-    packages = ['EICMOBOTestTools', 'AID2ETestTools', 'objectives', 'interfaces']
+    packages = ['EICMOBOTestTools', 'AID2ETestTools', 'objectives', 'interfaces'],
+    extras_require = {
+        'panda': [
+            'idds-client',
+            'idds-common',
+            'idds-workflow',
+            'panda-client',
+        ]
+    }
 )
 
 # end =========================================================================

@@ -15,17 +15,11 @@ dependencies:
     - wandb
     - botorch
     
-    # Scheduler with PanDA support (from GitHub repository)
-    # Installs scheduler_epic directly from GitHub with PanDA dependencies
-    - git+https://github.com/aid2e/scheduler_epic.git[panda]
+    # Scheduler (base version without PanDA support)
+    # For PanDA support, use bic-mobo-panda.yml instead
+    - git+https://github.com/aid2e/scheduler_epic.git
     
-    # PanDA/iDDS packages for distributed computing
-    - idds-client
-    - idds-common
-    - idds-workflow
-    - panda-client
-    
-    # Additional dependencies for PanDA execution
+    # Additional dependencies
     - cloudpickle
     - joblib
     
