@@ -317,8 +317,7 @@ class GeometryEditor:
         #    DD4hep geometries! This will be dealt with when we
         #    transition to AID2E-framework...
         installPath = self.detPath + "/install/share/epic/"
-        #fullConfig  = installPath + FileManager.GetNewName("epic_full.xml", tag)
-        fullConfig  = installPath + "epic_full.xml"
+        fullConfig  = installPath + FileManager.GetNewName("epic_full.xml", tag)
         defConfig   = installPath + FileManager.GetNewName("epic.xml", tag)
         print("FullConfig and detConfig ", fullConfig, defConfig)
         return "cp " + fullConfig + " " + defConfig
