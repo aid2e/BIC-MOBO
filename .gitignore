@@ -11,3 +11,7 @@ run/
 stash
 *.agents.md
 test_*
+*.egg-info
+fieldmaps/
+calibrations/
+gdml/
