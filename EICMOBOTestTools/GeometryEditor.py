@@ -148,7 +148,7 @@ class GeometryEditor:
     def CopyGeoToRunDir(self):
         """CopyGeoToRunDir
 
-        Copies geometry specifed by `det_path` to run
+        Copies geometry specifed by `cmake_path` to run
         directory of trial. Should be called BEFORE
         calling `EditCompact`, `EditRelatedFiles`, or
         `DoGeoRecomp`.
@@ -157,7 +157,7 @@ class GeometryEditor:
         if os.path.exists(self.detPath ):
             subprocess.run(["rm", "-r", self.detPath])
         shutil.copytree(
-            self.cfgRun['det_path'],
+            self.cmakePath,
             self.detPath,
             ignore=shutil.ignore_patterns('.*')
         )
@@ -319,7 +319,6 @@ class GeometryEditor:
         installPath = self.detPath + "/install/share/epic/"
         fullConfig  = installPath + FileManager.GetNewName("epic_full.xml", tag)
         defConfig   = installPath + FileManager.GetNewName("epic.xml", tag)
-        print("FullConfig and detConfig ", fullConfig, defConfig)
         return "cp " + fullConfig + " " + defConfig
 
     def MakeGeoRecompileCommand(self):
@@ -334,7 +333,7 @@ class GeometryEditor:
         # Return recompilation commands
         return "\n".join([
             f'cd {self.detPath}',
-            f'cmake -B build -S {self.cmakePath} -DCMAKE_INSTALL_PREFIX=install',
+            f'cmake -B build -S {self.detPath} -DCMAKE_INSTALL_PREFIX=install',
             'cmake --build build',
             'cmake --install build',
             'cd -'
