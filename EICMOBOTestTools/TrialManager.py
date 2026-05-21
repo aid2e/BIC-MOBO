@@ -63,14 +63,6 @@ class TrialManager:
        tag = f"AID2ETrial{time}"
        return tag
     
-    def __MakeRunDirectories(self):
-        """MakeRunDirectories
-
-        Create necessary directories for the trial.
-
-        Returns:
-          None
-        """
 
 
     def __DoGeometryEdits(self, params):
