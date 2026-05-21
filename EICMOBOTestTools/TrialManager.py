@@ -62,6 +62,8 @@ class TrialManager:
        time = re.sub(r'[.\-:\ ]', '', time)
        tag = f"AID2ETrial{time}"
        return tag
+    
+
 
     def __DoGeometryEdits(self, params):
         """DoGeometryEdits

@@ -1,3 +1,13 @@
 objectives/__pycache__
 EICMOBOTestTools/__pycache__
+AID2ETestTools/__pycache__
 ref/
+share/epic/
+share/epic/*
+epic/
+epic/*
+*.json
+run/
+stash
+*.agents.md
+test_*

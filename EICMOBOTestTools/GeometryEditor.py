@@ -37,6 +37,7 @@ class GeometryEditor:
         self.runPath = self.cfgRun["run_path"] + "/" + tag
         self.geoDir  = pathlib.PurePath(self.cfgRun["det_path"]).name
         self.detPath = self.runPath + "/" + self.geoDir
+        self.cmakePath = self.cfgRun["cmake_path"]
 
     def __GetCompact(self, param, tag):
         """GetCompact
@@ -145,9 +146,9 @@ class GeometryEditor:
         return found
 
     def CopyGeoToRunDir(self):
-        """GopyGeoToRunDir
+        """CopyGeoToRunDir
 
-        Copies geometry specifed by `det_path` to run
+        Copies geometry specifed by `cmake_path` to run
         directory of trial. Should be called BEFORE
         calling `EditCompact`, `EditRelatedFiles`, or
         `DoGeoRecomp`.
@@ -156,7 +157,7 @@ class GeometryEditor:
         if os.path.exists(self.detPath ):
             subprocess.run(["rm", "-r", self.detPath])
         shutil.copytree(
-            self.cfgRun['det_path'],
+            self.cmakePath,
             self.detPath,
             ignore=shutil.ignore_patterns('.*')
         )
@@ -266,6 +267,11 @@ class GeometryEditor:
         # step 4: now identify all YAML configurations
         #   that contain one of the updated files
         config  = self.detPath + "/configurations"
+        
+        # create configurations directory if it doesn't exist
+        if not os.path.exists(config):
+            os.makedirs(config)
+        
         for file in os.listdir(config):
 
             full = config + "/" + file
@@ -324,19 +330,14 @@ class GeometryEditor:
         Returns:
           commands to be run
         """
-
-        # commands to run to recompile geo
-        comps  = [
+        # Return recompilation commands
+        return "\n".join([
             f'cd {self.detPath}',
-            'cmake -B build -S . -DCMAKE_INSTALL_PREFIX=install',
+            f'cmake -B build -S {self.detPath} -DCMAKE_INSTALL_PREFIX=install',
             'cmake --build build',
             'cmake --install build',
             'cd -'
-        ]
-        comp = "\n".join(comps)
-
-        # return full command
-        return comp
+        ])
 
     def MakeOverlapCheckCommand(self, tag):
         """MakeOverlapCheckCommand

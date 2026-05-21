@@ -82,13 +82,28 @@ There are four configuration files which define the parameters of the problem.
 Before beginning, please make sure conda and/or mamba is installed. Once
 ready, the environment for the problem can be set up via:
 
+**Base installation (without PanDA/iDDS support):**
 ```bash
 ./create-environment
+```
+
+**With PanDA/iDDS support (for distributed computing):**
+```bash
+./create-environment --panda
 ```
 
 And activated via `conda`
 ```bash
 conda activate bic-mobo
+```
+
+### Adding PanDA support to an existing installation
+
+If you initially installed without PanDA support and later need it, you can add it:
+```bash
+conda activate bic-mobo
+pip install -e .[panda]
+pip install 'git+https://github.com/aid2e/scheduler_epic.git[panda]'
 ```
 
 At any point, this environment can be deleted with

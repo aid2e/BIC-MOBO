@@ -53,8 +53,11 @@ def main(*args, **kwargs):
       -s: specify an environment script to source
       -t: specify a SLURM template to use
     """
+
     # parse argsuments
     args = itf.ParseArguments()
+    if os.getenv('BIC_MOBO') == None:
+        raise EnvironmentError("BIC_MOBO environment variable not set!")
 
     # load relevant config files
     run_cfg, exp_cfg, par_cfg, obj_cfg = itf.LoadConfigs()
