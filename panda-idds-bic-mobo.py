@@ -160,12 +160,6 @@ if __name__ == "__main__":
         "export BIC_MOBO=${AIDE_WORKDIR};",
         "echo BIC_MOBO path: $BIC_MOBO;",
 
-        # Debug
-        "env;",
-        "pwd;",
-        "python --version; which python;",
-        "echo \"Testing objective function execution:\";",
-        'python -c "import objectives.simple_objective; print(objectives.simple_objective.objective_function(0.1, 0.2))";',
         'echo "END OF ENVIRONMENT SETUP";',
     ]
     init_env = " ".join(init_env)
