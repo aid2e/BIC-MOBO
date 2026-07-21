@@ -3,7 +3,7 @@ from itertools import product
 import sys,argparse
 
 from BICLowQ2 import AID2ETools as at
-from BICLowQ2 import EICMOBOTools as et
+from BICLowQ2 import EICTools as et
 
 # Global parameters here (Only needed for multi-step jobs)
 global_parameters = {}
