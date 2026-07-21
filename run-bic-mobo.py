@@ -18,7 +18,7 @@ from ax.service.ax_client import AxClient
 from ax.service.utils.report_utils import exp_to_df
 from scheduler import AxScheduler, JobLibRunner, SlurmRunner
 
-import AID2ETestTools as att
+from BICLowQ2 import AID2ETools as at
 import interfaces as itf
 
 def main(*args, **kwargs):
@@ -64,8 +64,8 @@ def main(*args, **kwargs):
 
     # translate parameter, objective options
     # into ax-compliant ones
-    ax_pars, ax_par_cons = att.ConvertParamConfig(par_cfg)
-    ax_objs, ax_obj_cons = att.ConvertObjectConfig(obj_cfg)
+    ax_pars, ax_par_cons = at.ConvertParamConfig(par_cfg)
+    ax_objs, ax_obj_cons = at.ConvertObjectConfig(obj_cfg)
 
     # define generation strategy to use
     gstrat = GenerationStrategy(

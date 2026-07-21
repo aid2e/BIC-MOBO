@@ -12,7 +12,7 @@ import argparse as ap
 import os
 import subprocess
 
-import EICMOBOTestTools as emt
+from BICLowQ2 import EICTools as et
 
 
 def GetConfigPath(config: str) -> str:
@@ -63,7 +63,7 @@ def LoadConfig(config: str) -> Dict[str, Any]:
       Loaded config file as a dictionary
     """
     path = GetConfigPath(config)
-    data = emt.ReadJsonFile(path)
+    data = et.ReadJsonFile(path)
     return data
 
 
