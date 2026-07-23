@@ -216,7 +216,7 @@ def CalculateClustEneReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
 
     # extract specific objective(s) to return
     objectives = {
-        "energy_resolution" : output["reso_fit_sigma"]
+        f"energy_resolution_{opts.pdg}" : output["reso_fit_sigma"]
     }
 
     ojson = opts.ofile.replace(".root", ".json")

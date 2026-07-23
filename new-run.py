@@ -86,7 +86,7 @@ def BuildListOfParams():
                             'enable_staves_6' : stave6,
                         }
                         params.append(param)
-     return params
+    return params
 
 def main(*args, **kwargs):
     """main
@@ -132,9 +132,9 @@ def main(*args, **kwargs):
 
     options = at.ParseArguments()
     client  = at.BICLowQ2Client(options, RunObjectives)
-    if args.brute:
+    if options.brute:
         client.Brute(BuildListOfParams())
-    elif args.waves:
+    elif options.waves:
         client.Waves(__file__)
     else:
         client.Run()
