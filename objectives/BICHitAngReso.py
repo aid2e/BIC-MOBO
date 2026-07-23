@@ -522,7 +522,6 @@ def CalculateHitAngReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
         odata = output | objectives
         json.dump(odata, out)
 
-    # and return fit width as resolution
     return objectives
 
 

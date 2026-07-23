@@ -52,13 +52,13 @@ print(f"  -- pi- rejection power = {pim_rej}")
 gam_res_json = None
 with open(ofResGam.replace(".root", ".json")) as ogam:
     gam_res_data = json.load(ogam)
-    gam_res_json = gam_res_data["energy_resolution"]
+    gam_res_json = gam_res_data["energy_resolution_11"]
 
 # extract e- resolution
 ele_res_json = None
 with open(ofResEle.replace(".root", ".json")) as oele:
     ele_res_data = json.load(oele)
-    ele_res_json = ele_res_data["eta_resolution"]
+    ele_res_json = ele_res_data["eta_resolution_11"]
 
 # extract pi- rejection power
 pim_rej_json = None

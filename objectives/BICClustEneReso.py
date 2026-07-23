@@ -224,7 +224,6 @@ def CalculateClustEneReso(opts: Options = DEFAULT_OPTS) -> Dict[str, float]:
         odata = output | objectives
         json.dump(odata, out)
 
-    # and return calculated resolution
     return objectives
 
 

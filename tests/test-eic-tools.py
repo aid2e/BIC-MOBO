@@ -161,7 +161,7 @@ print(f"  {rungeoB}")
 
 # (3) Test trial manager ------------------------------------------------------
 
-# create a trial managers
+# create trial managers
 trimanA = et.TrialManager("../configuration/run.config",
                            "../configuration/parameters.config",
                            "../configuration/objectives.config",
