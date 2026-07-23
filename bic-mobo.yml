@@ -1,4 +1,4 @@
-name: bic-mobo
+name: bic-fw-test
 channels:
   - conda-forge
 dependencies:
@@ -15,13 +15,16 @@ dependencies:
     - wandb
     - botorch
 
+    # BIC/LowQ2 framework
+    - git+https://github.com/aid2e/BICLowQ2-framework.git
+
     # Scheduler (base version without PanDA support)
     # For PanDA support, use bic-mobo-panda.yml instead
-    - git+https://github.com/aid2e/scheduler_epic.git
+    - scheduler[slurm] @ git+https://github.com/aid2e/scheduler_epic.git
 
     # Additional dependencies
     - cloudpickle
     - joblib
 
     # BIC-MOBO core packages (local installation)
-    - -e .
+    #- -e .
