@@ -1,41 +1,117 @@
 # =============================================================================
 ## @file   run-bic-mobo.py
 #  @author Derek Anderson
-#  @date   09.25.2025
+#  @date   07.22.2026
 # -----------------------------------------------------------------------------
 ## @brief Main executable and wrapper script for
 #    running the BIC-MOBO problem.
 # =============================================================================
 
-import json
-import os
-import pickle
+def RunObjectives(tag = None, **kwargs):
+    """RunObjectives
 
-from ax.generation_strategy.generation_node import GenerationStep
-from ax.generation_strategy.generation_strategy import GenerationStrategy
-from ax.modelbridge.registry import Generators
-from ax.service.ax_client import AxClient
-from ax.service.utils.report_utils import exp_to_df
-from scheduler import AxScheduler, JobLibRunner, SlurmRunner
+    Runs trial (simulation, reconstruction,
+    and all analyses) for provided set of
+    updated parameters.
 
-from BICLowQ2 import AID2ETools as at
-import interfaces as itf
+    Args:
+      tag:    tag associated with trial
+      kwargs: any keyword arguments (e.g. parameterization)
+    Returns:
+      dictionary of objectives and their values
+    """
+    # NB use lazy importing to make sure
+    # dependencies get picked up
+    import json
+    import os
+    from BICLowQ2 import AID2ETools as at
+    from BICLowQ2 import EICTools as et
+
+    # grab paths to config files
+    run_path, exp_path, par_path, obj_path = at.GetConfigPaths()
+
+    # create trial manager
+    trial = et.TrialManager(run_path, par_path, obj_path, tag)
+
+    # create and run script
+    oFiles = trial.DoTrial(kwargs)
+
+    # extract relevant objectives
+    #   --> (should be in associated
+    #       json files)
+    objectives = dict()
+    for obj, file in oFiles.items():
+        oJson = file.replace(".root", ".json")
+        oVal  = None
+        if os.path.isfile(oJson):
+            with open(oJson, 'r') as out:
+                oDat = json.load(out)
+                oVal = oDat[obj]
+            objectives[obj] = oVal
+
+    # if needed, calculate cost
+    cfg_obj = et.ReadJsonFile(obj_path)
+    if "Cost" in cfg_obj["objectives"]:
+        cost = 1
+        for key, value in kwargs.items():
+            if "enable_staves_" in key:
+                cost += int(value)
+        objectives["cost"] = cost
+
+    # return dictionary of objectives
+    return objectives
+
+def BuildListOfParams():
+    """BuildListOfParams
+
+    Helper function to build the list of parameterizations
+    covering the BIC-MOBO design space. Used when manually
+    sampling design space.
+
+    Returns:
+      list of parameterizations formatted as dictionaries:
+        >>> [{'param_a': 0, 'param_b': 1, ...}, ...]
+    """
+    params = []
+    for stave2 in range(2):
+        for stave3 in range(2):
+            for stave4 in range(2):
+                for stave5 in range(2):
+                    for stave6 in range(2):
+                        param = {
+                            'enable_staves_2' : stave2,
+                            'enable_staves_3' : stave3,
+                            'enable_staves_4' : stave4,
+                            'enable_staves_5' : stave5,
+                            'enable_staves_6' : stave6,
+                        }
+                        params.append(param)
+    return params
 
 def main(*args, **kwargs):
     """main
 
-    Wrapper to run BIC-MOBO. The model
-    and generation strategy are saved
-    to both JSON and CSV files (model)
-    and pickle files (generation) for
-    downstream analysis.
+    Wrapper to run BIC-MOBO. Can be run in
+    3 modes, set with the -b or -w options:
 
-    User can specify which runner to use
-    with the -r option:
+     default -- with Ax and locally 
+       >>> python run-lowq2-mobo.py
+
+     launch -- with Ax over a single slurm job
+       >>> python run-lowq2-mobo.py
+
+     waves -- with Ax over a sequence of monitoring jobs
+       >>> python run-lowq2-mobo.py -w
+
+     brute -- manually sampling full design space
+       >>> python run-bic-mobo.py -b 
+
+     In the default mode, user can specify which runner
+     to use with the -r option:
 
       joblib -- use joblib runner (default)
       slurm  -- use slurm runner
-      panda  -- use panda runner (TODO)
+      panda  -- use panda runner (use panda-idds-bic-mobo.py)
 
     User can also specify an Ax experiment
     to load with the -x option, or override
@@ -44,6 +120,9 @@ def main(*args, **kwargs):
     below.
 
     Args:
+      -b: run in brute mode
+      -w: run in waves of jobs
+      -l: run in one job
       -r: specify runner
       -x: specify experiment to load
       -u: specify a run config to use
@@ -53,121 +132,20 @@ def main(*args, **kwargs):
       -s: specify an environment script to source
       -t: specify a SLURM template to use
     """
+    from BICLowQ2 import AID2ETools as at
 
-    # parse argsuments
-    args = itf.ParseArguments()
-    if os.getenv('BIC_MOBO') == None:
-        raise EnvironmentError("BIC_MOBO environment variable not set!")
-
-    # load relevant config files
-    run_cfg, exp_cfg, par_cfg, obj_cfg = itf.LoadConfigs()
-
-    # translate parameter, objective options
-    # into ax-compliant ones
-    ax_pars, ax_par_cons = at.ConvertParamConfig(par_cfg)
-    ax_objs, ax_obj_cons = at.ConvertObjectConfig(obj_cfg)
-
-    # define generation strategy to use
-    gstrat = GenerationStrategy(
-        steps = [
-            GenerationStep(
-                model = Generators.SOBOL,
-                num_trials = exp_cfg["n_sobol"],
-                min_trials_observed = exp_cfg["min_sobol"],
-                max_parallelism = exp_cfg["max_parallel_gen"]
-            ),
-            GenerationStep(
-                model = Generators.BOTORCH_MODULAR,
-                num_trials = -1,
-                max_parallelism = exp_cfg["max_parallel_gen"]
-            )
-        ]
-    )
-
-    # either create or load ax experiment as needed
-    ax_client = None
-    if args.experiment == None:
-        ax_client = AxClient(
-            generation_strategy = gstrat,
-            enforce_sequential_optimization = False
-        )
-        ax_client.create_experiment(
-            name = exp_cfg["problem_name"],
-            parameters = ax_pars,
-            objectives = ax_objs,
-            parameter_constraints = ax_par_cons
-        )
+    options = at.ParseArguments()
+    client  = at.BICLowQ2Client(options, RunObjectives)
+    if options.brute:
+        client.Brute(BuildListOfParams())
+    elif options.waves:
+        client.Waves(__file__)
+    elif options.launch:
+        client.Launch(__file__)
     else:
-        if os.path.isfile(args.experiment):
-            ax_client = AxClient().load_from_json_file(args.experiment)
-        else:
-            raise FileNotFoundError(f"File {args.experiment} not found!")
-
-    # set up runners
-    runner = None
-    match args.runner:
-        case "joblib":
-            runner = JobLibRunner(
-                n_jobs = run_cfg["sched_n_jobs"],
-                config = {
-                    'tmp_dir' : run_cfg["run_path"]
-                }
-            )
-        case "slurm":
-            runner = SlurmRunner(
-                slurm_template = f"{itf.GetSlurmTemplate()}",
-                init_env = [
-                    f"source {itf.GetThisMobo()}",
-                    f"source {run_cfg['conda']}",
-                    f"conda activate {run_cfg['environment']}",
-                    "conda list"
-                ]
-            )
-        case _:
-            raise ValueError("Unknown runner specified!")
-
-    # set up scheduler
-    scheduler = AxScheduler(
-        ax_client,
-        runner,
-        config = {
-            'job_output_dir' : exp_cfg["OUTPUT_DIR"],
-            'max_concurrent_trials' : exp_cfg["max_parallel_gen"],
-            'enable_checkpoint' : True,
-            'monitoring_interval' : run_cfg["monitoring_interval"],
-        }
-    )
-    scheduler.set_objective_function(itf.RunObjectives)
-
-    # run and report best parameters
-    best = scheduler.run_optimization(max_trials = exp_cfg["n_max_trials"])
-    print(f"Optimization complete! Best parameters:\n", best)
-
-    # create paths to output files
-    oPathBase = exp_cfg["OUTPUT_DIR"] + "/" + exp_cfg["problem_name"]
-    oPathCSV  = oPathBase + "_exp_out.csv"
-    oPathJson = oPathBase + "_exp_out.json"
-    oPathPikl = oPathBase + "_gen_out.pkl"
-    oPathBest = oPathBase + "_best_params.json"
-
-    # save optimal prameters to a json file
-    with open(oPathBest, 'w') as file:
-        json.dump(best, file)
-
-    # grab experiment and generation strategy
-    # for output
-    exp   = ax_client._experiment
-    gen   = ax_client._generation_strategy
-    dfExp = exp_to_df(exp)
-
-    # save outcomes and experiment
-    # for downstream analysis
-    dfExp.to_csv(oPathCSV)
-    ax_client.save_to_json_file(oPathJson)
-    with open(oPathPikl, 'wb') as file:
-        pickle.dump(gen.model, file)
+        client.Run()
 
 if __name__ == "__main__":
-   main()
+    main()
 
-# end =========================================================================
+# end ========================================================================
