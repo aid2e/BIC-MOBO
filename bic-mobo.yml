@@ -27,4 +27,4 @@ dependencies:
     - joblib
 
     # BIC-MOBO core packages (local installation)
-    #- -e .
+    - -e .
