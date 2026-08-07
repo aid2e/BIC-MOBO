@@ -2,8 +2,8 @@ import logging
 from itertools import product
 import sys,argparse
 
-import AID2ETestTools as att
-import EICMOBOTestTools as emt
+from BICLowQ2 import AID2ETools as at
+from BICLowQ2 import EICTools as et
 
 # Global parameters here (Only needed for multi-step jobs)
 global_parameters = {}
@@ -25,9 +25,17 @@ def RunObjectives(*args, **kwargs):
         dict: dictionary of objectives for the scheduler
     """
     import datetime
+    import os
+    import pathlib
     import re
-    from interfaces.RunObjectives import RunObjectives as RunObjectivesImpl
-    
+    from importlib.machinery import SourceFileLoader
+
+    # Extract RunObjectives implementation from entry point
+    impl_full = pathlib.Path(os.environ['THIS_MOBO'] / 'run-bic-mobo.py')
+    impl_stem = impl_full.stem
+    run_module = SourceFileLoader(f"{impl_stem}", f"{impl_full}").load_module()
+    RunObjectivesImpl = run_module.RunObjectives
+
     # Log start of trial with parameters
     print(f"\n{'='*80}")
     print(f"Starting RunObjectives with parameters: {kwargs}")
@@ -84,10 +92,10 @@ if __name__ == "__main__":
     exp_path = os.path.join(main_path, "configuration/problem.config")
 
 
-    cfg_par = emt.ReadJsonFile(par_path)
-    cfg_obj = emt.ReadJsonFile(obj_path)
+    cfg_par = et.ReadJsonFile(par_path)
+    cfg_obj = et.ReadJsonFile(obj_path)
     # Get the configuration parameters from the json file
-    cfg_exp = emt.ReadJsonFile(exp_path)
+    cfg_exp = et.ReadJsonFile(exp_path)
     logging.debug("Initializing the ax client")
 
     gstrat = GenerationStrategy(
@@ -98,8 +106,8 @@ if __name__ == "__main__":
     )
     ax_client = AxClient(generation_strategy=gstrat)
 
-    cfg_par, cfg_par_cons = att.ConvertParamConfig(cfg_par)
-    cfg_obj, cfg_obj_cons = att.ConvertObjectConfig(cfg_obj)
+    cfg_par, cfg_par_cons = at.ConvertParamConfig(cfg_par)
+    cfg_obj, cfg_obj_cons = at.ConvertObjectConfig(cfg_obj)
     # print the configuration parameters and objectives
     print("Configuration parameters: ", cfg_par)
     print("Configuration objectives: ", cfg_obj)
