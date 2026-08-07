@@ -12,7 +12,7 @@ import setuptools
 setuptools.setup(
     name     = 'bic-mobo',
     version  = '0.0.0',
-    packages = ['objectives', 'interfaces'],
+    packages = ['objectives'],
     extras_require = {
         'panda': [
             'idds-client',

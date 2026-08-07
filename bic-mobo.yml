@@ -1,4 +1,4 @@
-name: bic-fw-test
+name: bic-mobo
 channels:
   - conda-forge
 dependencies:

@@ -40,7 +40,7 @@ def CreateEnvironment(config: str, name: str) -> None:
 
     # then generate relevant scripts to set
     # environment variables
-    subprocess.run('conda run -n bic-fw-test python -c "import os;from BICLowQ2.AID2ETools import MakeThisMoboScripts;MakeThisMoboScripts(os.getcwd())"', shell=True)
+    subprocess.run('conda run -n bic-mobo python -c "import os;from BICLowQ2.AID2ETools import MakeThisMoboScripts;MakeThisMoboScripts(os.getcwd())"', shell=True)
 
 def RemoveEnvironment(name: str) -> None:
     """RemoveEnvironment
@@ -68,15 +68,15 @@ if __name__ == "__main__":
 
         # 1st set up environment
         if args.panda:
-            CreateEnvironment("bic-mobo-panda.yml", "bic-fw-test")
+            CreateEnvironment("bic-mobo-panda.yml", "bic-mobo")
         else:
-            CreateEnvironment("bic-mobo.yml", "bic-fw-test")
+            CreateEnvironment("bic-mobo.yml", "bic-mobo")
             print("\nNote: To add PanDA/iDDS support later, run:")
-            print("  conda activate bic-fw-test")
+            print("  conda activate bic-mobo")
             print("  pip install -e .[panda]")
             print("  pip install 'git+https://github.com/aid2e/scheduler_epic.git[panda]'")
 
     if args.remove:
-        RemoveEnvironment("bic-fw-test")
+        RemoveEnvironment("bic-mobo")
 
 # end =========================================================================
