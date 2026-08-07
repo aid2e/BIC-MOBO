@@ -25,9 +25,17 @@ def RunObjectives(*args, **kwargs):
         dict: dictionary of objectives for the scheduler
     """
     import datetime
+    import os
+    import pathlib
     import re
-    from interfaces.RunObjectives import RunObjectives as RunObjectivesImpl
-    
+    from importlib.machinery import SourceFileLoader
+
+    # Extract RunObjectives implementation from entry point
+    impl_full = pathlib.Path(os.environ['THIS_MOBO'] / 'run-bic-mobo.py')
+    impl_stem = impl_full.stem
+    run_module = SourceFileLoader(f"{impl_stem}", f"{impl_full}").load_module()
+    RunObjectivesImpl = run_module.RunObjectives
+
     # Log start of trial with parameters
     print(f"\n{'='*80}")
     print(f"Starting RunObjectives with parameters: {kwargs}")
