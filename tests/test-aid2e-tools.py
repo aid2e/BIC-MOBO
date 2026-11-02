@@ -11,26 +11,26 @@
 
 import pprint
 
-import AID2ETestTools as att
-import EICMOBOTestTools as emt
+from BICLowQ2 import AID2ETools as at
+from BICLowQ2 import EICTools as et
 
 
 
 # (0) Test config converters -------------------------------------------------- 
 
 # load config files
-cfg_run = emt.ReadJsonFile("../configuration/run.config")
-cfg_exp = emt.ReadJsonFile("../configuration/problem.config")
-cfg_par = emt.ReadJsonFile("../configuration/parameters.config")
-cfg_obj = emt.ReadJsonFile("../configuration/objectives.config")
+cfg_run = et.ReadJsonFile("../configuration/run.config")
+cfg_exp = et.ReadJsonFile("../configuration/problem.config")
+cfg_par = et.ReadJsonFile("../configuration/parameters.config")
+cfg_obj = et.ReadJsonFile("../configuration/objectives.config")
 
 # convert parameter config
-ax_pars = att.ConvertParamConfig(cfg_par)
+ax_pars = at.ConvertParamConfig(cfg_par)
 print(f"[0][Test A] Converted parameter configuration")
 pprint.pprint(ax_pars)
 
 # convert objective config
-ax_objs = att.ConvertObjectConfig(cfg_obj)
+ax_objs = at.ConvertObjectConfig(cfg_obj)
 print(f"[0][Test B] Converted objective configuration")
 print(f"  objectives = {ax_objs}")
 

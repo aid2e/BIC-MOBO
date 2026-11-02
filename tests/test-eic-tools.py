@@ -11,25 +11,25 @@
 
 import pprint
 
-import EICMOBOTestTools as emt
+from BICLowQ2 import EICTools as et
 
 
 
 # (0) Test ConfigParser -------------------------------------------------------
 
 # these should work
-enable2 = emt.GetParameter("enable_staves_2", "../configuration/parameters.config")
-enable3 = emt.GetParameter("enable_staves_3", "../configuration/parameters.config")
+enable2 = et.GetParameter("enable_staves_2", "../configuration/parameters.config")
+enable3 = et.GetParameter("enable_staves_3", "../configuration/parameters.config")
 
 # grab variables
-path2, type2, units2 = emt.GetPathElementAndUnits(enable2)
-path3, type3, units3 = emt.GetPathElementAndUnits(enable3)
+path2, type2, units2 = et.GetPathElementAndUnits(enable2)
+path3, type3, units3 = et.GetPathElementAndUnits(enable3)
 
 print(f"[0][enable_staves_2] path = {path2}, type = {type2}, units = {units2}")
 print(f"[0][enable_staves_3] path = {path3}, type = {type3}, units = {units3}")
 
 try:
-    enable3 = emt.GetParameter("eanble_satvse_3", "parameters.config")
+    enable3 = et.GetParameter("eanble_satvse_3", "parameters.config")
 except:
     print(f"[0][enable_staves_3] exception raised!")
 finally:
@@ -38,8 +38,8 @@ finally:
 # (1) Test GeometryEditor -----------------------------------------------------
 
 # create a geometry editor
-geditor1A = emt.GeometryEditor("../configuration/run.config", "test1A")
-geditor1B = emt.GeometryEditor("../configuration/run.config", "test1B")
+geditor1A = et.GeometryEditor("../configuration/run.config", "test1A")
+geditor1B = et.GeometryEditor("../configuration/run.config", "test1B")
 
 # copy geo source to run directories
 geditor1A.CopyGeoToRunDir()
@@ -59,7 +59,7 @@ print(f"[1][Test A] edited related files")
 
 # create a 2nd compact file with multiple
 # subsystems modified
-enable5 = emt.GetParameter("enable_staves_5", "../configuration/parameters.config")
+enable5 = et.GetParameter("enable_staves_5", "../configuration/parameters.config")
 geditor1B.EditCompact(enable5, 1, "test1B")
 print(f"[1][test B] set value of stave 5 to 1")
 
@@ -71,8 +71,8 @@ print(f"[1][test B] edited related files")
 
 # create a sim generator and parse enviroment
 # config for easy use
-simgen = emt.SimGenerator("../configuration/run.config")
-enviro = emt.ReadJsonFile("../configuration/run.config")
+simgen = et.SimGenerator("../configuration/run.config")
+enviro = et.ReadJsonFile("../configuration/run.config")
 intest = "single_electron"
 inputs = enviro["sim_input"][intest]
 
@@ -94,7 +94,7 @@ print(f"  {runsimA}")
 print(f"  {runsimB}")
 
 # create a rec generator
-recgen = emt.RecGenerator("../configuration/run.config")
+recgen = et.RecGenerator("../configuration/run.config")
 
 # try to create a reco command
 dorecA = recgen.MakeCommand("test2A", intest, "central.e5ele.py")
@@ -111,21 +111,21 @@ print(f"  {runrecA}")
 print(f"  {runrecB}")
 
 # create an ana generator
-anagen = emt.AnaGenerator("../configuration/run.config", "../configuration/objectives.config")
+anagen = et.AnaGenerator("../configuration/run.config", "../configuration/objectives.config")
 
 # recreate output name for input to
 # test ana generator
-steeTag = emt.ConvertSteeringToTag("central.e5ele.py")
-simOutA = emt.MakeOutName("sim", "test2A", intest, steeTag)
-simOutB = emt.MakeOutName("sim", "test2B", intest, steeTag)
-recOutA = emt.MakeOutName("rec", "test2A", intest, steeTag)
-recOutB = emt.MakeOutName("rec", "test2B", intest, steeTag)
+steeTag = et.ConvertSteeringToTag("central.e5ele.py")
+simOutA = et.MakeOutName("sim", "test2A", intest, steeTag)
+simOutB = et.MakeOutName("sim", "test2B", intest, steeTag)
+recOutA = et.MakeOutName("rec", "test2A", intest, steeTag)
+recOutB = et.MakeOutName("rec", "test2B", intest, steeTag)
 outDirA = enviro["out_path"] + "/test2A/" + recOutA
 outDirB = enviro["out_path"] + "/test2B/" + recOutB
 
 # try to create an analysis command
-doanaA, ofileA = anagen.MakeCommand("test2A", intest, "ElectronEtaResolution", simOutA, recOutA)
-doanaB, ofileB = anagen.MakeCommand("test2B", intest, "ElectronEtaResolution", simOutB, recOutB)
+doanaA, ofileA = anagen.MakeCommand("test2A", intest, "eta_resolution_11", simOutA, recOutA)
+doanaB, ofileB = anagen.MakeCommand("test2B", intest, "eta_resolution_11", simOutB, recOutB)
 print(f"[2][Test E] Created commands to do analysis")
 print(f"  (A) command = {doanaA}")
 print(f"      output  = {ofileA}")
@@ -133,15 +133,15 @@ print(f"  (B) command = {doanaB}")
 print(f"      output  = {ofileB}")
 
 # try to create an analysis script
-runanaA = anagen.MakeScript("test2A", intest, "ElectronEtaResolution", doanaA)
-runanaB = anagen.MakeScript("test2B", intest, "ElectronEtaResolution", doanaB)
+runanaA = anagen.MakeScript("test2A", intest, "eta_resolution_11", doanaA)
+runanaB = anagen.MakeScript("test2B", intest, "eta_resolution_11", doanaB)
 print(f"[2][Test F] Created driver scripts for analysis")
 print(f"  {runanaA}")
 print(f"  {runanaB}")
 
 # create geo editors and edit a few parameters
-geditor2A = emt.GeometryEditor("../configuration/run.config", "test2A")
-geditor2B = emt.GeometryEditor("../configuration/run.config", "test2B")
+geditor2A = et.GeometryEditor("../configuration/run.config", "test2A")
+geditor2B = et.GeometryEditor("../configuration/run.config", "test2B")
 geditor2A.CopyGeoToRunDir()
 geditor2B.CopyGeoToRunDir()
 geditor2A.EditCompact(enable2, 1, "test2A")
@@ -161,12 +161,12 @@ print(f"  {rungeoB}")
 
 # (3) Test trial manager ------------------------------------------------------
 
-# create a trial managers
-trimanA = emt.TrialManager("../configuration/run.config",
+# create trial managers
+trimanA = et.TrialManager("../configuration/run.config",
                            "../configuration/parameters.config",
                            "../configuration/objectives.config",
                            "test3A")
-trimanB = emt.TrialManager("../configuration/run.config",
+trimanB = et.TrialManager("../configuration/run.config",
                            "../configuration/parameters.config",
                            "../configuration/objectives.config")
 

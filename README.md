@@ -1,4 +1,4 @@
-# BIC-MOBO [Under construction]
+# BIC-MOBO [Under Construction]
 
 An application of the AID2E framework to the ePIC Barrel Imaging Calorimeter (BIC).
 As the BIC design is largely finalized and optimal, this exercise has three purposes:
@@ -22,7 +22,7 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 - [x] Run workflow with one objective on hPC resources via
       SLURM using scheduler
 - [x] Implement second objective, electron-pion separation
-- [ ] Run workflow with both objectives on HPC resources via
+- [x] Run workflow with both objectives on HPC resources via
       PANDA using scheduler
 
 ### Design Goals:
@@ -41,10 +41,12 @@ the [AID2E scheduler](https://github.com/aid2e/scheduler_epic).
 ## Dependencies
 
 - Python 3.11.5
+- Matplotlib
+- Numpy
 - Conda or Mamba (eg. via [Miniforge](https://github.com/conda-forge/miniforge)) 
-- [Ax](https://ax.dev)
 - [EIC Software](https://eic.github.io)
-- [AID2E Scheduler](https://github.com/aid2e/scheduler_epic)
+- [PanDA](https://pandawms.org) (optional)
+- [BIC/LowQ2 framework](https://github.com/aid2e/BICLowQ2-framework)
 
 ## Code organization
 
@@ -53,20 +55,14 @@ This repository is structured like so:
   | File/Directory | Description |
   |----------------|-------------|
   | `bic-mobo.yml` | conda/mamba environment file |
-  | `create-environment` | script to create bic-mobo conda/mamba environment |
-  | `remove-environment` | script to remove bic-mobo conda/mamba environment |
+  | `environment.py` | script to create/remove bic-mobo conda/mamba environment |
   | `run-bic-mobo.py` | wrapper script and point-of-entry to the problem |
-  | `launch-mobo` | script to launch a slurm pilot job |
   | `configurations` | collects various configuration files that define the problem |
   | `objectives` | collects analysis scripts to calculate objectives for optimize for |
   | `steering` | collects steering/macro files for running simulations |
-  | `interfaces` | collects code to interface the framework with objective scripts or other external code |
   | `examples` | collects of example config files, scripts, etc. for illustrating some of the extended functionality |
   | `scripts` | collects various scripts useful for running, testing, etc. |
   | `tests` | collects test scripts for unit tests |
-  | `bin` | collects scripts to set environment variables, etc. |
-  | `EICMOBOTestTools` | a python package which consolidates various tools for interfacing with the EIC software stack |
-  | `AID2ETestTools` | a python package which consolidates various tools for interfacing with Ax |
 
 There are four configuration files which define the parameters of the problem.
 
@@ -82,14 +78,8 @@ There are four configuration files which define the parameters of the problem.
 Before beginning, please make sure conda and/or mamba is installed. Once
 ready, the environment for the problem can be set up via:
 
-**Base installation (without PanDA/iDDS support):**
 ```bash
-./create-environment
-```
-
-**With PanDA/iDDS support (for distributed computing):**
-```bash
-./create-environment --panda
+./environment.py --create
 ```
 
 And activated via `conda`
@@ -97,28 +87,9 @@ And activated via `conda`
 conda activate bic-mobo
 ```
 
-### Adding PanDA support to an existing installation
-
-If you initially installed without PanDA support and later need it, you can add it:
-```bash
-conda activate bic-mobo
-pip install -e .[panda]
-pip install 'git+https://github.com/aid2e/scheduler_epic.git[panda]'
-```
-
 At any point, this environment can be deleted with
 ```bash
-./remove-environment
-```
-
-Then, install the [AID2E scheduler](https://github.com/aid2e/scheduler_epic)
-following the instructions in its repository. Remember to configure the
-scheduler appropriately if you're going to run with SLURM, PanDA, etc.
-
-Istall the local utilities/objectives by running
-the command below in this directory:
-```bash
-pip install -e .
+./environment.py --remove
 ```
 
 Lastly, you'll need to make sure the `eic-shell` is available on your
@@ -126,34 +97,67 @@ machine.  You can find instructions to do so [here](https://eic.github.io/tutori
 
 ## Running the framework
 
-Before beginning, create a local installation of [the ePIC geometry
-description](https://github.com/eic/epic).  Note that you **DO NOT**
-need to compile it.  This will happen automatically while running.
+Before running, make sure you source one of the generated scripts
+in `./bin` to set appropriate environment variables:
+```bash
+source bin/this-mobo.sh
+```
+
+Subsitute the appropriate script for your shell.  Note that these
+can be modified to point to other config files as needed.  For
+example, if you wanted to run with a different parameter file
+you could modify the scripts such that:
+```bash
+export PAR_CFG=$THIS_MOBO/configuration/different_parameters.config
+```
+
+(Modify as needed for the other scripts) These can also be changed
+at runtime using the options described [here](https://github.com/aid2e/BICLowQ2-framework/blob/main/src/BICLowQ2/AID2ETools/OptionParser.py#L84).
+
+Then, create a local installation of [the ePIC geometry description](https://github.com/eic/epic):
 ```bash
 cd <where-the-geo-goes>
 git clone git@github.com:eic/epic.git
 ```
 
-Then, modify `configurations/run.config` so that the paths point to your
-installations and relevent scripts, eg.
+Then, modify `configurations/run.config` accordingly so that the paths point to your
+installations and relevent scripts, e.g.
 ```json
 {
     "_comment"      : "Configures runtime options, and paths to EIC software components",
-    "conda"         : "<path-to-your-script>/conda.sh",
+    "conda"         : "<path-to-your-script>/conda.sh", # <<< for example /home/<username>/.miniforge3/etc/profile.d
     "environment"   : "bic-mobo",
-    "out_path"      : "<where-the-output-goes>",
-    "run_path"      : "<where-the-running-happens>",
-    "log_path"      : "<where-the-logs-go>",
-    "eic_shell"     : "<path-to-your-script>/eic-shell",
+    "out_path"      : "$THIS_MOBO/out",
+    "run_path"      : "$THIS_MOBO/run",
+    "log_path"      : "$THIS_MOBO/log",
+    "eic_shell"     : "$THIS_MOBO/run_singularity.sh", # <<< CHANGE THIS IF NOT USING PANDA, use the path to your eic-shell
     "overlap_check" : "checkOverlaps",
-    "det_path"      : "<where-the-geo-goes>/epic",
+    "epic_setup"    : "$THIS_MOBO/epic/install/bin/thisepic.sh", # <<< might need to adjust
+    "det_path"      : "$THIS_MOBO/epic/install/share/epic", # <<< might need to adjust
+    "cmake_path"    : "$THIS_MOBO/epic", # <<< might need to adjust
     "det_config"    : "epic",
     "sim_exec"      : "npsim",
     "sim_input"     : {
-        "location" : "<where-the-mobo-goes>/BIC-MOBO/steering",
-        "type"     : "gun"
+        "single_electron" : {
+            "location" : "$THIS_MOBO/steering/electron",
+            "type"     : "gun"
+        },
+        "single_piminus" : {
+            "location" : "$THIS_MOBO/steering/piminus",
+            "type"     : "gun"
+        },
+        "single_pizero" : {
+            "_comment" : "currently unused",
+            "location" : "$THIS_MOBO/steering/pizero",
+            "type"     : "gun"
+        },
+        "single_gamma" : {
+            "_comment" : "currently unused",
+            "location" : "$THIS_MOBO/steering/gammma",
+            "type"     : "gun"
+        }
     },
-    "reco_exec"   : "eicrecon"
+    "rec_exec"    : "eicrecon",
     "rec_collect" : [
         "MCParticles",
         "GeneratedParticles",
@@ -167,76 +171,42 @@ installations and relevent scripts, eg.
         "EcalBarrelImagingRecHits",
         "EcalBarrelImagingClusters",
         "EcalBarrelImagingClusterAssociations",
-        "EcalBarrelClusters"
-    ]
+        "EcalBarrelClusters",
+        "EcalBarrelClusterAssociations",
+        "EcalBarrelTruthClusters",
+        "EcalBarrelTruthClusterAssociations"
+    ],
     "sched_n_jobs"        : 1,
     "monitoring_interval" : 30
 }
-
 ```
 
-Where the angle brackets should be replaced with the appropriate
-absolute paths. The values `det_path` and `det_config` should be
-what `echo $DETECTOR_PATH` and `echo $DETECTOR_CONFIG` return after
-sourcing your installation of the geometry.
+Notice the `$THIS_MOBO` variable: this points to the directory holding the
+`bin/this-mobo.*` scripts.  It can be used to specify paths relative to
+the directory the wrapper script is in.
 
-And finally, modify `configurations/problem.config` and
-`configurations/objectives.config` to make sure the
-Ax output is placed in the appropriate directory and the code is
-picking up the correct objective scripts, eg.
-```json
-{
-    "_comment"         : "Configures problem for Ax",
-    "name"             : "BIC Optimization",
-    "problem_name"     : "bic_mobo",
-    "OUTPUT_DIR"       : "<where-the-output-goes>"
-    "n_sobol"          : 10,
-    "min_sobol"        : 6,
-    "max_parallel_gen" : 6,
-    "n_max_trials"     : 42
-}
-```
+Once appropriately configured, the optimization can be run in 3 modes:
+1. Locally with Joblib
+2. Remotely with a single Slurm monitoring job
+3. Remotely in waves with a sequence of Slurm monitoring jobs.
+4. Remotely via 32 slurm jobs to sample the entire design space.
 
-```json
-{
-    "_comment"   : "Configure objectives to optimize for",
-    "objectives" : {
-        "ElectronEnergyResolution" : {
-            "input" : "single_electron",
-            "path"  : "<where-the-mobo-goes>/BIC-MOBO/objectives",
-            "exec"  : "BICEnergyResolution.py",
-            "rule"  : "python <EXEC> -i <RECO> -o <OUTPUT> -p 11",
-            "stage" : "ana",
-            "goal"  : "minimize"
-        }
-    }
-}
-```
-
-Once appropriately configured, we need to set an environment variable
-to point to our installation via:
-```bash
-source bin/this-mobo.sh
-
-```
-Where `bin/this-mobo.sh` should be replaced by the script for your
-shell.  Note that this should only need to be done once per session.
-
-Finally, the optimization can be run locally with:
+**(1) Local Running:**
 ```bash
 python run-bic-mobo.py
 ```
 
-Or it can be run via Slurm using the script `launch-mobo.py`, which
-dispatches a sequence of pilot jobs.  Update the slurm options in
-`configuration/template.slurm` accordingly, and launch the job with:
+**(2) Single Monitoring Job Running:**
 ```bash
-python launch-mobo.py
+python run-bic-mobo.py -l
 ```
 
-Various analyses can be run on the optimization output with the
-script `run-analyses.py`.  After updating the appropariate paths/options
-in the script, do:
+**(3) Multi-Monitoring Job Running:**
 ```bash
-python run-analyses.py
+python run-bic-mobo.py -w
+```
+
+**(4) Manual-Sampling:**
+```bash
+python run-bic-mobo.py -b
 ```
